@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>QUATTRO AI — Installation Guide</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#05080f;color:#e8ecf5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;padding-bottom:60px}
+
+/* ── Header ── */
+.hdr{background:linear-gradient(135deg,#0a0f1c,#05080f);border-bottom:2px solid #00d9ff;padding:20px 18px;text-align:center}
+.hdr h1{font-size:22px;font-weight:900;letter-spacing:4px;color:#00d9ff;margin-bottom:4px}
+.hdr p{font-size:11px;color:#5a6b85;letter-spacing:2px}
+
+/* ── Step container ── */
+.steps{max-width:480px;margin:0 auto;padding:0 14px}
+.step{margin:24px 0 0}
+.step-hdr{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.step-num{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;flex-shrink:0}
+.step-num.blue{background:rgba(0,217,255,.15);border:2px solid #00d9ff;color:#00d9ff}
+.step-num.green{background:rgba(0,255,157,.15);border:2px solid #00ff9d;color:#00ff9d}
+.step-num.orange{background:rgba(255,122,0,.15);border:2px solid #ff7a00;color:#ff7a00}
+.step-num.purple{background:rgba(138,43,226,.2);border:2px solid #a855f7;color:#a855f7}
+.step-num.yellow{background:rgba(245,185,58,.15);border:2px solid #f5b93a;color:#f5b93a}
+.step-title{font-size:16px;font-weight:900;letter-spacing:1px}
+.step-title span{font-size:10px;font-weight:400;color:#5a6b85;letter-spacing:1.5px;display:block;margin-top:2px}
+
+/* ── Connector line ── */
+.connector{width:2px;height:20px;background:linear-gradient(to bottom,#1a2336,#00d9ff22);margin:0 auto 0 31px}
+
+/* ── Browser mockup ── */
+.browser{background:#0d1117;border:1px solid #30363d;border-radius:10px;overflow:hidden;margin-bottom:12px}
+.browser-bar{background:#161b22;padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #30363d}
+.dot{width:10px;height:10px;border-radius:50%}
+.dot.r{background:#ff5f57}
+.dot.y{background:#febc2e}
+.dot.g{background:#28c840}
+.url-bar{flex:1;background:#0d1117;border:1px solid #30363d;border-radius:5px;padding:4px 10px;font-size:11px;color:#8b949e;font-family:'SF Mono',monospace}
+.browser-body{padding:14px}
+
+/* ── App mockup ── */
+.app-mock{background:#05080f;border:2px solid #1a2336;border-radius:14px;overflow:hidden;margin-bottom:12px}
+.app-hdr-mock{background:#0a0f1c;padding:12px 14px;border-bottom:1px solid #1a2336;display:flex;justify-content:space-between;align-items:center}
+.app-logo-mock{font-size:13px;font-weight:900;letter-spacing:2px;color:#00d9ff}
+.app-body-mock{padding:12px 14px}
+
+/* ── Form field mockups ── */
+.mock-field{margin-bottom:10px}
+.mock-label{font-size:9px;letter-spacing:1.5px;color:#5a6b85;margin-bottom:4px;display:block;text-transform:uppercase}
+.mock-input{background:#05080f;border:2px solid #1a2336;border-radius:8px;padding:10px 12px;font-size:13px;color:#e8ecf5;width:100%;display:block}
+.mock-input.highlighted{border-color:#00ff9d;box-shadow:0 0 0 3px rgba(0,255,157,.15)}
+.mock-input.active{border-color:#00d9ff;box-shadow:0 0 0 3px rgba(0,217,255,.15)}
+.mock-btn{width:100%;padding:12px;border-radius:8px;font-size:12px;font-weight:900;letter-spacing:1.5px;text-align:center;cursor:pointer;border:none;margin-top:6px}
+.mock-btn.green{background:linear-gradient(135deg,#00ff9d,#00d9ff);color:#05080f}
+.mock-btn.blue{background:linear-gradient(135deg,#00d9ff,#5a6bff);color:#fff}
+.mock-btn.outline-g{background:rgba(0,255,157,.08);border:1px solid rgba(0,255,157,.3);color:#00ff9d}
+.mock-btn.outline-b{background:rgba(0,217,255,.08);border:1px solid rgba(0,217,255,.3);color:#00d9ff}
+
+/* ── Render UI mockup ── */
+.render-mock{background:#1c1c1c;border:1px solid #333;border-radius:10px;overflow:hidden;margin-bottom:12px}
+.render-sidebar{background:#141414;padding:12px;border-right:1px solid #333;width:120px;float:left;height:100%}
+.render-main{padding:14px;overflow:hidden}
+.render-nav-item{padding:6px 8px;border-radius:5px;font-size:10px;color:#888;margin-bottom:2px}
+.render-nav-item.active{background:#2a2a2a;color:#fff}
+.render-field{margin-bottom:10px}
+.render-label{font-size:10px;color:#888;margin-bottom:3px;display:block}
+.render-input{background:#1c1c1c;border:1px solid #444;border-radius:5px;padding:7px 10px;font-size:11px;color:#ccc;width:100%;display:block;font-family:monospace}
+.render-input.highlighted{border-color:#7c3aed;box-shadow:0 0 0 2px rgba(124,58,237,.25)}
+.render-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700}
+.render-badge.live{background:rgba(34,197,94,.15);color:#22c55e;border:1px solid rgba(34,197,94,.3)}
+.render-badge.deploy{background:#7c3aed;color:#fff}
+
+/* ── Annotation ── */
+.ann{display:flex;align-items:flex-start;gap:8px;margin:8px 0}
+.ann-arrow{font-size:18px;color:#f5b93a;flex-shrink:0;line-height:1.2}
+.ann-text{font-size:12px;color:#b8c5da;line-height:1.5}
+.ann-text b{color:#f5b93a}
+.ann-text .g{color:#00ff9d}
+.ann-text .b{color:#00d9ff}
+.ann-text .r{color:#ff2d55}
+
+/* ── Highlight box ── */
+.hl{border-radius:8px;padding:4px 6px;display:inline-block;font-size:11px;font-weight:700}
+.hl.g{background:rgba(0,255,157,.12);color:#00ff9d;border:1px solid rgba(0,255,157,.3)}
+.hl.b{background:rgba(0,217,255,.12);color:#00d9ff;border:1px solid rgba(0,217,255,.3)}
+.hl.y{background:rgba(245,185,58,.12);color:#f5b93a;border:1px solid rgba(245,185,58,.3)}
+.hl.r{background:rgba(255,45,85,.12);color:#ff2d55;border:1px solid rgba(255,45,85,.3)}
+.hl.p{background:rgba(168,85,247,.12);color:#a855f7;border:1px solid rgba(168,85,247,.3)}
+
+/* ── Info card ── */
+.info{background:#0a0f1c;border:1px solid #1a2336;border-radius:10px;padding:12px 14px;margin-bottom:10px;font-size:12px;color:#b8c5da;line-height:1.7}
+.info.g{border-left:3px solid #00ff9d}
+.info.y{border-left:3px solid #f5b93a}
+.info.r{border-left:3px solid #ff2d55}
+.info.b{border-left:3px solid #00d9ff}
+.info-ttl{font-size:11px;font-weight:900;letter-spacing:1.5px;margin-bottom:6px}
+.info-ttl.g{color:#00ff9d}
+.info-ttl.b{color:#00d9ff}
+.info-ttl.y{color:#f5b93a}
+.info-ttl.r{color:#ff2d55}
+
+/* ── Signal circle ── */
+.sig-wrap-mock{text-align:center;padding:14px 0}
+.sig-circle-mock{width:150px;height:150px;border-radius:50%;margin:0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;border:5px solid;position:relative}
+.sig-circle-mock.buy{border-color:#00ff9d;background:radial-gradient(circle,rgba(0,255,157,.15) 0%,#05080f 70%);box-shadow:0 0 40px rgba(0,255,157,.4)}
+.sig-circle-mock.sell{border-color:#ff2d55;background:radial-gradient(circle,rgba(255,45,85,.15) 0%,#05080f 70%);box-shadow:0 0 40px rgba(255,45,85,.4)}
+.sig-circle-mock.wait{border-color:#f5b93a;background:radial-gradient(circle,rgba(245,185,58,.08) 0%,#05080f 70%)}
+.sig-dir-mock{font-size:36px;font-weight:900}
+.sig-conf-mock{font-size:24px;font-weight:900;color:#00d9ff;font-family:monospace}
+.sig-lbl-mock{font-size:9px;color:#5a6b85;letter-spacing:2px}
+
+/* ── Step divider ── */
+.part-hdr{margin:32px 0 0;padding:12px 14px;background:linear-gradient(135deg,rgba(0,217,255,.08),rgba(0,255,157,.05));border:1px solid rgba(0,217,255,.2);border-radius:10px;text-align:center}
+.part-hdr h2{font-size:13px;font-weight:900;letter-spacing:3px;color:#00d9ff}
+.part-hdr p{font-size:10px;color:#5a6b85;margin-top:3px;letter-spacing:1px}
+
+/* ── Env var row ── */
+.env-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.env-key{background:#111;border:1px solid #333;border-radius:5px;padding:8px 10px;font-size:11px;font-family:monospace;color:#e879f9}
+.env-val{background:#111;border:2px solid #7c3aed;border-radius:5px;padding:8px 10px;font-size:11px;font-family:monospace;color:#a78bfa;box-shadow:0 0 0 2px rgba(124,58,237,.2)}
+
+/* ── Badge row ── */
+.badge-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+
+/* ── Timeline ── */
+.tl{position:relative;padding-left:20px}
+.tl::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,#00d9ff,#00ff9d)}
+.tl-item{position:relative;margin-bottom:14px}
+.tl-item::before{content:'';position:absolute;left:-17px;top:4px;width:10px;height:10px;border-radius:50%;background:#00d9ff;border:2px solid #05080f}
+.tl-item:last-child::before{background:#00ff9d}
+.tl-step{font-size:12px;color:#b8c5da;line-height:1.6}
+.tl-step b{color:#e8ecf5}
+.tl-step .code{background:#0a0f1c;border:1px solid #1a2336;border-radius:4px;padding:1px 6px;font-family:monospace;font-size:11px;color:#00d9ff}
+
+/* ── Success banner ── */
+.success{background:linear-gradient(135deg,rgba(0,255,157,.1),rgba(0,217,255,.05));border:1px solid rgba(0,255,157,.3);border-radius:10px;padding:14px;text-align:center;margin-bottom:12px}
+.success .icon{font-size:32px;margin-bottom:6px}
+.success .txt{font-size:13px;font-weight:900;color:#00ff9d;letter-spacing:1px}
+.success .sub{font-size:11px;color:#5a6b85;margin-top:4px}
+
+/* ── Tooltip bubble ── */
+.bubble{background:#f5b93a;color:#05080f;border-radius:8px;padding:6px 10px;font-size:11px;font-weight:700;display:inline-block;position:relative;margin:4px 0}
+.bubble::before{content:'▲';position:absolute;top:-12px;left:50%;transform:translateX(-50%);color:#f5b93a;font-size:10px}
+
+/* ── Key visual ── */
+.key-visual{background:linear-gradient(135deg,#0a0f1c,#080c18);border:1px solid #1a2336;border-radius:12px;padding:16px;text-align:center;margin-bottom:12px}
+.key-icon{font-size:40px;margin-bottom:8px}
+.key-url{font-family:monospace;font-size:13px;color:#00d9ff;background:rgba(0,217,255,.08);border:1px solid rgba(0,217,255,.2);border-radius:6px;padding:8px 14px;margin:8px 0;display:inline-block;word-break:break-all}
+
+/* ── Numbered list ── */
+.num-list{counter-reset:num}
+.num-item{display:flex;gap:10px;margin-bottom:10px;counter-increment:num}
+.num-item::before{content:counter(num);width:22px;height:22px;background:rgba(0,217,255,.15);border:1px solid rgba(0,217,255,.3);border-radius:50%;color:#00d9ff;font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.num-item p{font-size:12px;color:#b8c5da;line-height:1.6}
+.num-item p b{color:#e8ecf5}
+.num-item p .code{background:#0a0f1c;border:1px solid #1a2336;border-radius:4px;padding:1px 6px;font-family:monospace;font-size:11px;color:#00ff9d}
+
+/* Footer */
+.footer{text-align:center;padding:30px 14px 10px;font-size:10px;color:#5a6b85;letter-spacing:1px}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>QUATTRO AI</h1>
+  <p>INSTALLATION GUIDE • STEP BY STEP</p>
+</div>
+
+<div class="steps">
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr" style="margin-top:20px">
+    <h2>OVERVIEW</h2>
+    <p>3 things to set up — takes about 15 minutes total</p>
+  </div>
+
+  <!-- Overview cards -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:12px">
+    <div style="background:#0a0f1c;border:1px solid #1a2336;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:24px">🔑</div>
+      <div style="font-size:9px;color:#00d9ff;font-weight:900;letter-spacing:1px;margin-top:4px">TWELVEDATA</div>
+      <div style="font-size:9px;color:#5a6b85;margin-top:2px">Free API key</div>
+    </div>
+    <div style="background:#0a0f1c;border:1px solid #1a2336;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:24px">🐙</div>
+      <div style="font-size:9px;color:#a855f7;font-weight:900;letter-spacing:1px;margin-top:4px">GITHUB</div>
+      <div style="font-size:9px;color:#5a6b85;margin-top:2px">Upload code</div>
+    </div>
+    <div style="background:#0a0f1c;border:1px solid #1a2336;border-radius:10px;padding:12px;text-align:center">
+      <div style="font-size:24px">🚀</div>
+      <div style="font-size:9px;color:#00ff9d;font-weight:900;letter-spacing:1px;margin-top:4px">RENDER</div>
+      <div style="font-size:9px;color:#5a6b85;margin-top:2px">Run server</div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr">
+    <h2>STEP 1 — TWELVEDATA API KEY</h2>
+    <p>This gives the backend real forex + gold prices</p>
+  </div>
+
+  <div class="step">
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="url-bar">twelvedata.com</div>
+      </div>
+      <div class="browser-body">
+        <!-- Navbar mockup -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #1a2336">
+          <div style="font-size:14px;font-weight:900;color:#e8ecf5">TwelveData</div>
+          <div style="background:#4f46e5;color:#fff;padding:5px 12px;border-radius:5px;font-size:11px;font-weight:700">Get free API key</div>
+        </div>
+        <!-- Sign up form -->
+        <div style="max-width:240px;margin:0 auto">
+          <div style="font-size:13px;font-weight:700;color:#e8ecf5;margin-bottom:10px;text-align:center">Create free account</div>
+          <div class="mock-field">
+            <span class="mock-label">Email</span>
+            <div class="mock-input" style="color:#5a6b85;font-size:12px">your@email.com</div>
+          </div>
+          <div class="mock-field">
+            <span class="mock-label">Password</span>
+            <div class="mock-input" style="color:#5a6b85;font-size:12px">••••••••</div>
+          </div>
+          <div class="mock-btn" style="background:#4f46e5;color:#fff;border-radius:7px;padding:10px;font-size:12px;font-weight:700;text-align:center">Sign up free →</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">①</div><div class="ann-text">Go to <b>twelvedata.com</b> → click <b>"Get free API key"</b> or <b>"Sign up"</b></div></div>
+    <div class="ann"><div class="ann-arrow">②</div><div class="ann-text">Enter your email + password → click <b>Sign up</b> → check your email → click the confirm link</div></div>
+
+    <!-- Dashboard mockup -->
+    <div class="browser" style="margin-top:10px">
+      <div class="browser-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="url-bar">app.twelvedata.com/dashboard</div>
+      </div>
+      <div class="browser-body">
+        <div style="font-size:11px;color:#5a6b85;margin-bottom:8px;font-weight:700;letter-spacing:1px">YOUR API KEY</div>
+        <div style="background:#0a0f1c;border:2px solid #00d9ff;border-radius:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 0 0 3px rgba(0,217,255,.15)">
+          <div style="font-family:monospace;font-size:13px;color:#00d9ff;letter-spacing:1px">a1b2c3d4e5f6789abc...</div>
+          <div style="background:rgba(0,217,255,.12);border:1px solid rgba(0,217,255,.3);color:#00d9ff;padding:4px 8px;border-radius:5px;font-size:10px;font-weight:700;cursor:pointer">COPY</div>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:#5a6b85">Free plan: 800 credits/day • 8 req/min</div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">③</div><div class="ann-text">After confirming email → log in → you'll see your API key. <b>Click COPY</b> and save it somewhere (Notes app).</div></div>
+
+    <div class="info g">
+      <div class="info-ttl g">✅ DONE WITH STEP 1</div>
+      You now have a key that looks like: <span style="font-family:monospace;color:#00d9ff">a1b2c3d4e5f6...</span><br>
+      Keep it — you'll paste it into Render in Step 3.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr">
+    <h2>STEP 2 — UPLOAD TO GITHUB</h2>
+    <p>GitHub stores the code so Render can access it</p>
+  </div>
+
+  <div class="step">
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="url-bar">github.com</div>
+      </div>
+      <div class="browser-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:16px">🐙 <span style="font-weight:700;color:#e8ecf5">GitHub</span></div>
+          <div style="display:flex;gap:8px">
+            <div style="background:#21262d;border:1px solid #30363d;color:#e8ecf5;padding:5px 12px;border-radius:5px;font-size:11px">Sign in</div>
+            <div style="background:#2ea043;color:#fff;padding:5px 12px;border-radius:5px;font-size:11px;font-weight:700">Sign up</div>
+          </div>
+        </div>
+        <div style="text-align:center;padding:10px;color:#5a6b85;font-size:12px">The world's leading software development platform</div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">①</div><div class="ann-text">Go to <b>github.com</b> → click <span class="hl p">Sign up</span> (free) — or sign in if you have an account</div></div>
+
+    <!-- New repo mockup -->
+    <div class="browser" style="margin-top:10px">
+      <div class="browser-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="url-bar">github.com/new</div>
+      </div>
+      <div class="browser-body">
+        <div style="font-size:13px;font-weight:700;color:#e8ecf5;margin-bottom:12px">Create a new repository</div>
+        <div class="mock-field">
+          <span class="mock-label">Repository name</span>
+          <div class="mock-input highlighted" style="color:#e8ecf5">quattro-trading</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <div style="width:14px;height:14px;border-radius:50%;border:2px solid #2ea043;background:#2ea043;display:flex;align-items:center;justify-content:center">
+            <div style="width:6px;height:6px;border-radius:50%;background:#fff"></div>
+          </div>
+          <span style="font-size:12px;color:#b8c5da">Public</span>
+        </div>
+        <div class="mock-btn green">Create repository</div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">②</div><div class="ann-text">After signing up → click <b>+</b> top right → <b>New repository</b> → name it <span class="hl b">quattro-trading</span> → click <span class="hl g">Create repository</span></div></div>
+
+    <!-- Upload files mockup -->
+    <div class="browser" style="margin-top:10px">
+      <div class="browser-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="url-bar">github.com/you/quattro-trading</div>
+      </div>
+      <div class="browser-body">
+        <div style="border:2px dashed #30363d;border-radius:8px;padding:20px;text-align:center;margin-bottom:10px;background:#161b22">
+          <div style="font-size:24px;margin-bottom:6px">📁</div>
+          <div style="font-size:12px;color:#8b949e;margin-bottom:8px">Drop files here or</div>
+          <div style="background:#21262d;border:1px solid #30363d;color:#e8ecf5;padding:6px 14px;border-radius:5px;font-size:11px;display:inline-block;cursor:pointer">choose your files</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #21262d">
+          <div style="font-size:16px">📄</div>
+          <div style="font-size:11px;color:#8b949e;flex:1">index.html</div>
+          <div style="font-size:10px;color:#2ea043">✓ ready</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #21262d">
+          <div style="font-size:16px">📁</div>
+          <div style="font-size:11px;color:#8b949e;flex:1">backend/</div>
+          <div style="font-size:10px;color:#2ea043">✓ ready</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid #21262d">
+          <div style="font-size:16px">📄</div>
+          <div style="font-size:11px;color:#8b949e;flex:1">render.yaml</div>
+          <div style="font-size:10px;color:#2ea043">✓ ready</div>
+        </div>
+        <div style="background:#2ea043;color:#fff;padding:8px;border-radius:6px;font-size:12px;font-weight:700;text-align:center;margin-top:10px">Commit changes</div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">③</div><div class="ann-text">Click <b>"uploading an existing file"</b> → drag ALL the project files in → click <span class="hl g">Commit changes</span></div></div>
+
+    <div class="info g">
+      <div class="info-ttl g">✅ DONE WITH STEP 2</div>
+      Your code is now on GitHub. Render will read it from here.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr">
+    <h2>STEP 3 — DEPLOY ON RENDER</h2>
+    <p>This is the server that runs 24/7 and calculates signals</p>
+  </div>
+
+  <div class="step">
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="url-bar">render.com</div>
+      </div>
+      <div class="browser-body">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div style="font-size:15px;font-weight:900;color:#e8ecf5">⬡ Render</div>
+          <div style="background:#7c3aed;color:#fff;padding:6px 14px;border-radius:6px;font-size:11px;font-weight:700">Get started for free</div>
+        </div>
+        <div style="font-size:11px;color:#5a6b85;text-align:center">Deploy web services, databases &amp; more</div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">①</div><div class="ann-text">Go to <b>render.com</b> → click <span class="hl p">Get started for free</span> → sign up with GitHub (easiest)</div></div>
+
+    <!-- New service mockup -->
+    <div class="render-mock" style="margin-top:10px">
+      <div style="background:#141414;padding:10px 14px;border-bottom:1px solid #333;display:flex;justify-content:space-between;align-items:center">
+        <div style="font-size:12px;font-weight:700;color:#e8ecf5">New Web Service</div>
+        <div style="font-size:10px;color:#888">Step 1 of 2</div>
+      </div>
+      <div style="padding:14px">
+        <div style="font-size:11px;color:#888;margin-bottom:8px;font-weight:700">CONNECT REPOSITORY</div>
+        <div style="background:#1c1c1c;border:2px solid #7c3aed;border-radius:6px;padding:10px 12px;display:flex;align-items:center;gap:8px;box-shadow:0 0 0 2px rgba(124,58,237,.2)">
+          <div style="font-size:16px">🐙</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:#e8ecf5">you/quattro-trading</div>
+            <div style="font-size:10px;color:#888">github.com/you/quattro-trading</div>
+          </div>
+          <div style="margin-left:auto;background:#7c3aed;color:#fff;padding:4px 10px;border-radius:4px;font-size:10px;font-weight:700">Connect</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">②</div><div class="ann-text">After signing in → click <b>New +</b> → <b>Web Service</b> → connect your GitHub repo <span class="hl p">you/quattro-trading</span></div></div>
+
+    <!-- Settings mockup -->
+    <div class="render-mock" style="margin-top:10px">
+      <div style="background:#141414;padding:10px 14px;border-bottom:1px solid #333">
+        <div style="font-size:12px;font-weight:700;color:#e8ecf5">Configure Web Service</div>
+      </div>
+      <div style="padding:14px">
+        <div class="render-field">
+          <span class="render-label">Root Directory</span>
+          <div class="render-input highlighted">backend</div>
+          <div style="margin-top:3px;display:flex;align-items:center;gap:4px"><span style="color:#f59e0b;font-size:11px">←</span> <span style="font-size:10px;color:#f59e0b;font-weight:700">Type exactly: backend</span></div>
+        </div>
+        <div class="render-field">
+          <span class="render-label">Build Command</span>
+          <div class="render-input">npm install</div>
+        </div>
+        <div class="render-field">
+          <span class="render-label">Start Command</span>
+          <div class="render-input">node server.js</div>
+        </div>
+        <div class="render-field">
+          <span class="render-label">Plan</span>
+          <div style="display:flex;gap:6px;margin-top:4px">
+            <div style="border:2px solid #7c3aed;border-radius:5px;padding:6px 12px;font-size:11px;font-weight:700;color:#a855f7">Free ✓</div>
+            <div style="border:1px solid #333;border-radius:5px;padding:6px 12px;font-size:11px;color:#555">Starter</div>
+            <div style="border:1px solid #333;border-radius:5px;padding:6px 12px;font-size:11px;color:#555">Standard</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">③</div><div class="ann-text">Fill in these settings exactly as shown above. <b>Root Directory must be <span class="hl b">backend</span></b> — this is the most important field!</div></div>
+
+    <!-- Env vars mockup -->
+    <div class="render-mock" style="margin-top:10px">
+      <div style="background:#141414;padding:10px 14px;border-bottom:1px solid #333">
+        <div style="font-size:12px;font-weight:700;color:#e8ecf5">Environment Variables</div>
+      </div>
+      <div style="padding:14px">
+        <div style="font-size:10px;color:#888;margin-bottom:8px">Add environment variables for your service</div>
+        <div class="env-row">
+          <div class="env-key">TWELVEDATA_API_KEY</div>
+          <div class="env-val">a1b2c3d4e5f6... ← paste yours</div>
+        </div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:5px">
+          <span style="color:#f59e0b;font-size:14px">★</span>
+          <span style="font-size:10px;color:#f59e0b;font-weight:700">This is where you paste your TwelveData key from Step 1!</span>
+        </div>
+        <div style="margin-top:10px;background:#7c3aed;color:#fff;padding:8px;border-radius:5px;font-size:11px;font-weight:700;text-align:center">Add Environment Variable</div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">④</div><div class="ann-text">Scroll down to <b>Environment Variables</b> → click <b>Add</b> → Key: <span class="hl b">TWELVEDATA_API_KEY</span> → Value: <span class="hl y">paste your key from Step 1</span></div></div>
+
+    <!-- Deploy button mockup -->
+    <div style="background:#141414;border:1px solid #333;border-radius:8px;padding:14px;margin-top:10px;text-align:center">
+      <div style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;padding:12px 24px;border-radius:6px;font-size:14px;font-weight:900;display:inline-block;margin-bottom:8px">🚀 Create Web Service</div>
+      <div style="font-size:10px;color:#888">Takes 2–3 minutes to deploy</div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">⑤</div><div class="ann-text">Click <span class="hl p">Create Web Service</span> → wait 2–3 minutes → watch the logs. When you see <span class="hl g">✅ Data ready</span> it's live!</div></div>
+
+    <!-- Live URL mockup -->
+    <div class="key-visual" style="margin-top:10px">
+      <div class="key-icon">🔗</div>
+      <div style="font-size:11px;color:#5a6b85;margin-bottom:4px">YOUR BACKEND URL (copy this!)</div>
+      <div class="key-url">https://quattro-trading-xxxx.onrender.com</div>
+      <div style="font-size:10px;color:#5a6b85;margin-top:4px">Found at the top of your Render service page</div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">⑥</div><div class="ann-text">When it says <span class="hl g">Live</span> — copy the URL at the top of the page. It looks like <b>https://your-app.onrender.com</b>. Save it!</div></div>
+
+    <div class="info g">
+      <div class="info-ttl g">✅ DONE WITH STEP 3</div>
+      Your server is live. It's watching Binance + TwelveData 24/7 and ready to generate signals.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr">
+    <h2>STEP 4 — CONNECT THE APP</h2>
+    <p>Open index.html and paste your Render URL</p>
+  </div>
+
+  <div class="step">
+    <div class="app-mock">
+      <div class="app-hdr-mock">
+        <div>
+          <div class="app-logo-mock">QUATTRO AI <span style="color:#00ff9d;font-size:9px">v14</span>
+            <span style="background:rgba(0,255,157,.1);border:1px solid rgba(0,255,157,.3);color:#00ff9d;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:700;margin-left:4px">⚫ LOCAL</span>
+          </div>
+          <div style="font-size:8px;color:#5a6b85;letter-spacing:1px;margin-top:2px">4-STRATEGY FUSION</div>
+        </div>
+        <div style="background:rgba(0,255,157,.1);border:1px solid rgba(0,255,157,.3);color:#00ff9d;padding:3px 8px;border-radius:10px;font-size:9px;font-weight:700">🧠 0/0</div>
+      </div>
+      <div class="app-body-mock">
+        <!-- Backend section -->
+        <div style="background:#0a0f1c;border:2px solid rgba(0,255,157,.5);border-radius:10px;padding:12px;box-shadow:0 0 0 3px rgba(0,255,157,.1)">
+          <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#00ff9d;margin-bottom:8px">🚀 RENDER BACKEND (LIVE DATA)</div>
+          <div style="font-size:9px;color:#5a6b85;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Your Render URL</div>
+          <div style="background:#05080f;border:2px solid #00ff9d;border-radius:7px;padding:9px 10px;font-size:11px;color:#00ff9d;font-family:monospace;box-shadow:0 0 0 3px rgba(0,255,157,.1)">https://quattro-trading-xxxx.onrender.com</div>
+          <div style="background:rgba(0,255,157,.08);border:1px solid rgba(0,255,157,.3);color:#00ff9d;padding:9px;border-radius:7px;font-size:11px;font-weight:700;text-align:center;margin-top:8px">🔌 TEST CONNECTION</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">①</div><div class="ann-text">Open <b>index.html</b> in your browser → scroll down to the <span class="hl g">green Render Backend box</span></div></div>
+    <div class="ann"><div class="ann-arrow">②</div><div class="ann-text">Paste your Render URL → tap <span class="hl g">TEST CONNECTION</span></div></div>
+
+    <!-- Success state -->
+    <div class="app-mock" style="margin-top:10px">
+      <div class="app-hdr-mock">
+        <div>
+          <div class="app-logo-mock">QUATTRO AI <span style="color:#00ff9d;font-size:9px">v14</span>
+            <span style="background:rgba(0,255,157,.15);border:1px solid rgba(0,255,157,.4);color:#00ff9d;padding:2px 6px;border-radius:8px;font-size:9px;font-weight:700;margin-left:4px;box-shadow:0 0 8px rgba(0,255,157,.3)">🟢 LIVE</span>
+          </div>
+        </div>
+      </div>
+      <div class="app-body-mock">
+        <div style="background:#0a0f1c;border:2px solid rgba(0,255,157,.4);border-radius:10px;padding:12px">
+          <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#00ff9d;margin-bottom:6px">🚀 RENDER BACKEND</div>
+          <div style="font-size:11px;color:#00ff9d;font-weight:700">✅ Backend ONLINE — 10 streams ready, uptime 42s</div>
+          <div style="background:rgba(0,255,157,.08);border:1px solid rgba(0,255,157,.3);color:#00ff9d;padding:9px;border-radius:7px;font-size:11px;font-weight:700;text-align:center;margin-top:8px">✅ CONNECTED — tap to re-test</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ann"><div class="ann-arrow">③</div><div class="ann-text">You should see <span class="hl g">✅ Backend ONLINE</span> and <span class="hl g">🟢 LIVE</span> in the header. You're connected!</div></div>
+
+    <div class="info r" style="margin-top:10px">
+      <div class="info-ttl r">⏱ If it times out or fails...</div>
+      Render's free tier <b>sleeps after 15 minutes</b> of no use. The first wake-up takes 30 seconds. Just wait 30 seconds and tap TEST CONNECTION again. It will work.
+    </div>
+
+    <div class="info g">
+      <div class="info-ttl g">✅ DONE WITH STEP 4</div>
+      The app is now connected to real live market data. 🟢 LIVE badge means all signals use Binance + TwelveData.
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr">
+    <h2>STEP 5 — DAILY USE</h2>
+    <p>How to use the app every time you trade</p>
+  </div>
+
+  <div class="step">
+
+    <!-- Full app signal flow -->
+    <div class="app-mock">
+      <div class="app-hdr-mock">
+        <div class="app-logo-mock">QUATTRO AI <span style="color:#00ff9d;font-size:9px">v14</span> <span style="background:rgba(0,255,157,.15);border:1px solid rgba(0,255,157,.4);color:#00ff9d;padding:2px 6px;border-radius:8px;font-size:9px;margin-left:4px">🟢 LIVE</span></div>
+        <div style="background:rgba(0,255,157,.1);border:1px solid rgba(0,255,157,.3);color:#00ff9d;padding:3px 8px;border-radius:10px;font-size:9px;font-weight:700">🧠 7/10 (70%)</div>
+      </div>
+      <div class="app-body-mock">
+
+        <!-- Generate button -->
+        <div style="background:linear-gradient(135deg,#00ff9d,#00d9ff);color:#05080f;padding:14px;border-radius:12px;font-size:13px;font-weight:900;letter-spacing:2px;text-align:center;margin-bottom:10px">⚡ GENERATE</div>
+
+        <!-- Signal circle -->
+        <div class="sig-wrap-mock">
+          <div class="sig-circle-mock buy">
+            <div class="sig-dir-mock" style="color:#00ff9d">▲ BUY</div>
+            <div class="sig-conf-mock">79%</div>
+            <div class="sig-lbl-mock">CONFIDENCE</div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:#8595b0"><strong style="color:#e8ecf5">EUR/USD OTC</strong> • 5 MIN • $1.71</div>
+          <div style="margin-top:8px;padding:8px 12px;background:#0a0f1c;border-radius:8px;font-size:11px;color:#b8c5da;text-align:left">
+            <b style="color:#00d9ff">Why:</b> RSI 31 oversold • MACD bull cross • BB lower touch • up
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div style="background:linear-gradient(135deg,#00ff9d,#00d9ff);color:#05080f;padding:13px;border-radius:10px;font-size:12px;font-weight:900;text-align:center">▲ BUY / CALL</div>
+          <div style="border:2px solid #1a2336;color:#5a6b85;padding:13px;border-radius:10px;font-size:12px;font-weight:900;text-align:center">▼ SELL / PUT</div>
+        </div>
+
+        <!-- Vote card -->
+        <div style="background:#0a0f1c;border:1px solid #1a2336;border-radius:10px;padding:10px;margin-bottom:10px">
+          <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#00d9ff;margin-bottom:8px">📐 4-STRATEGY VOTE</div>
+          <div style="display:flex;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="width:20px;font-size:13px">📈</span>
+            <span style="flex:1;font-size:10px;color:#8595b0">TREND</span>
+            <span style="background:rgba(0,255,157,.15);color:#00ff9d;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:900">CALL</span>
+            <span style="color:#8595b0;font-size:10px;margin-left:8px">74% ✓</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="width:20px;font-size:13px">🎯</span>
+            <span style="flex:1;font-size:10px;color:#8595b0">RSI</span>
+            <span style="background:rgba(0,255,157,.15);color:#00ff9d;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:900">CALL</span>
+            <span style="color:#8595b0;font-size:10px;margin-left:8px">88% ✓</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+            <span style="width:20px;font-size:13px">⚡</span>
+            <span style="flex:1;font-size:10px;color:#8595b0">MACD</span>
+            <span style="background:rgba(0,255,157,.15);color:#00ff9d;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:900">CALL</span>
+            <span style="color:#8595b0;font-size:10px;margin-left:8px">88% ✓</span>
+          </div>
+          <div style="display:flex;align-items:center;padding:5px 0">
+            <span style="width:20px;font-size:13px">📊</span>
+            <span style="flex:1;font-size:10px;color:#8595b0">BOLLINGER</span>
+            <span style="background:rgba(255,45,85,.15);color:#ff2d55;font-size:10px;padding:2px 8px;border-radius:4px;font-weight:900">PUT</span>
+            <span style="color:#8595b0;font-size:10px;margin-left:8px">72%</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div style="margin:10px 0">
+      <div class="tl">
+        <div class="tl-item">
+          <div class="tl-step"><b>1. Open index.html</b> in your browser every time you want to trade</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-step"><b>2. Pick your asset</b> (EUR/USD, BTC, etc.) from the dropdown</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-step"><b>3. Open PocketOption</b> — check the <span class="code">payout %</span> shown for that asset. Enter it in the app. <b>If payout is below 85% — don't trade.</b></div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-step"><b>4. Tap GENERATE</b> — wait 3 seconds</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-step"><b>5. Follow the signal</b> — if it says ▲ BUY, place a CALL. If ▼ SELL, place a PUT. If ⏸ WAIT — skip this trade.</div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-step"><b>6. After trade expires</b> → come back → tap <span class="code">✅ LOG WIN</span> or <span class="code">❌ LOG LOSS</span> in the History tab. This makes the app smarter over time.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- What signals look like -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0">
+      <div style="text-align:center">
+        <div class="sig-circle-mock buy" style="width:90px;height:90px;margin:0 auto">
+          <div style="font-size:22px;font-weight:900;color:#00ff9d">▲</div>
+          <div style="font-size:14px;font-weight:900;color:#00d9ff">79%</div>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:#00ff9d;font-weight:700">BUY / CALL</div>
+        <div style="font-size:9px;color:#5a6b85;margin-top:2px">Place a CALL trade</div>
+      </div>
+      <div style="text-align:center">
+        <div class="sig-circle-mock sell" style="width:90px;height:90px;margin:0 auto">
+          <div style="font-size:22px;font-weight:900;color:#ff2d55">▼</div>
+          <div style="font-size:14px;font-weight:900;color:#00d9ff">82%</div>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:#ff2d55;font-weight:700">SELL / PUT</div>
+        <div style="font-size:9px;color:#5a6b85;margin-top:2px">Place a PUT trade</div>
+      </div>
+      <div style="text-align:center">
+        <div class="sig-circle-mock wait" style="width:90px;height:90px;margin:0 auto">
+          <div style="font-size:18px;font-weight:900;color:#f5b93a">⏸</div>
+          <div style="font-size:12px;font-weight:900;color:#f5b93a">WAIT</div>
+        </div>
+        <div style="margin-top:6px;font-size:10px;color:#f5b93a;font-weight:700">WAIT</div>
+        <div style="font-size:9px;color:#5a6b85;margin-top:2px">Skip this trade</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr">
+    <h2>BONUS — KEEP SERVER AWAKE</h2>
+    <p>Free Render tier sleeps after 15 min. Fix this for free.</p>
+  </div>
+
+  <div class="step">
+    <div class="browser">
+      <div class="browser-bar">
+        <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+        <div class="url-bar">cron-job.org</div>
+      </div>
+      <div class="browser-body">
+        <div style="font-size:13px;font-weight:700;color:#e8ecf5;margin-bottom:10px">Create Cronjob</div>
+        <div class="render-field">
+          <span class="render-label" style="font-size:9px;color:#5a6b85">URL to call</span>
+          <div class="render-input highlighted" style="color:#a78bfa">https://quattro-trading-xxxx.onrender.com/ping</div>
+        </div>
+        <div class="render-field">
+          <span class="render-label" style="font-size:9px;color:#5a6b85">Schedule</span>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">
+            <div style="border:2px solid #7c3aed;border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;color:#a855f7">Every 14 minutes ✓</div>
+          </div>
+        </div>
+        <div style="background:#7c3aed;color:#fff;padding:8px;border-radius:5px;font-size:11px;font-weight:700;text-align:center;margin-top:8px">Create Cronjob — FREE</div>
+      </div>
+    </div>
+
+    <div class="num-list" style="margin-top:10px">
+      <div class="num-item"><p>Go to <b>cron-job.org</b> → sign up free</p></div>
+      <div class="num-item"><p>Click <b>Create cronjob</b></p></div>
+      <div class="num-item"><p>URL: <span class="code">https://your-render-url.onrender.com/ping</span></p></div>
+      <div class="num-item"><p>Schedule: every <b>14 minutes</b></p></div>
+      <div class="num-item"><p>Click <b>Create</b> → done. Server never sleeps again.</p></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════ -->
+  <div class="part-hdr">
+    <h2>TROUBLESHOOTING</h2>
+    <p>If something isn't working</p>
+  </div>
+
+  <div class="step">
+    <div class="info r">
+      <div class="info-ttl r">❌ "Cannot reach backend"</div>
+      Free tier is sleeping. Wait 30 seconds → tap TEST CONNECTION again. Normal on first use each day.
+    </div>
+    <div class="info y">
+      <div class="info-ttl y">⚠️ Forex shows WAIT / "API key not set"</div>
+      You forgot to add TWELVEDATA_API_KEY in Render env vars. Go to Render → your service → Environment → add it there.
+    </div>
+    <div class="info y">
+      <div class="info-ttl y">⚠️ Only BTC/ETH works, forex doesn't</div>
+      Same as above — TwelveData key is missing. BTC/ETH use Binance (no key needed). Forex needs the key.
+    </div>
+    <div class="info b">
+      <div class="info-ttl b">ℹ️ Signal says "30 candles loading"</div>
+      Backend just woke up. Tap GENERATE again after 20 seconds. Data is downloading from TwelveData.
+    </div>
+    <div class="info b">
+      <div class="info-ttl b">ℹ️ 🚨 BLOCK appears instead of signal</div>
+      Payout is below 85% on PocketOption. The app is protecting you — don't trade on that asset right now. Switch to another asset or wait.
+    </div>
+  </div>
+
+  <!-- Final summary -->
+  <div class="success" style="margin-top:24px">
+    <div class="icon">✅</div>
+    <div class="txt">YOU'RE READY TO TRADE</div>
+    <div class="sub">Backend live • TwelveData connected • Binance streaming • Signals are real</div>
+  </div>
+
+  <div class="info b" style="margin-top:0">
+    <div class="info-ttl b">🧠 GOLDEN RULE</div>
+    Stay in DEMO mode on PocketOption until you've logged <b>50+ trades</b> and have a <b>60%+ win rate</b> in the History tab. The app learns from your results and gets more accurate over time.
+  </div>
+
+</div>
+
+<div class="footer">
+  QUATTRO AI v14 • INSTALLATION GUIDE
+</div>
+
+</body>
+</html>
