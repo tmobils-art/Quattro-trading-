@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: quattro-ai-backend
+    env: node
+    plan: free
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+    healthCheckPath: /ping
+    autoDeploy: true
