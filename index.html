@@ -268,66 +268,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 
-  <!-- ── Broker Data ── -->
-  <div class="card" style="border-color:rgba(245,185,58,.3)">
-    <div class="card-ttl" style="color:#f5b93a">📊 Broker Data (from PocketOption)</div>
-    <div class="row-2">
-      <div class="fld">
-        <span class="fld-lbl" style="color:#00ff9d">💰 Payout %</span>
-        <input type="number" id="payout" value="92" min="50" max="100" oninput="brokCheck()" style="color:#00ff9d;border-color:rgba(0,255,157,.3)">
-        <span class="pill g" id="payoutPill">✓ OK</span>
-      </div>
-      <div class="fld">
-        <span class="fld-lbl" style="color:#00d9ff">📈 Sentiment % Buy</span>
-        <input type="number" id="sent" value="50" min="0" max="100" oninput="brokCheck()" style="color:#00d9ff;border-color:rgba(0,217,255,.3)">
-        <span class="pill y" id="sentPill">⚠ 50/50</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── Manual Override (used when no backend) ── -->
-  <div class="card" id="manualCard">
-    <div class="card-ttl" style="color:#5a6b85">🔧 Manual Override <span style="font-weight:400;text-transform:none;color:#5a6b85;font-size:9px">(auto-filled when backend connected)</span></div>
-    <div class="row-2">
-      <div class="fld">
-        <span class="fld-lbl">RSI (14)</span>
-        <input type="number" id="rsi" value="45" min="0" max="100">
-      </div>
-      <div class="fld">
-        <span class="fld-lbl">Candle Pattern</span>
-        <select id="trend">
-          <option value="strong_up">🟢🟢🟢🟢🟢 Strong UP</option>
-          <option value="up" selected>🟢🟢🟢🟢🔴 UP</option>
-          <option value="mixed">🟢🔴🟢🔴🟢 Mixed</option>
-          <option value="down">🔴🔴🔴🔴🟢 DOWN</option>
-          <option value="strong_down">🔴🔴🔴🔴🔴 Strong DOWN</option>
-        </select>
-      </div>
-    </div>
-    <div class="row-2">
-      <div class="fld">
-        <span class="fld-lbl">MACD</span>
-        <select id="macd">
-          <option value="bull_cross">Bull Cross ⚡</option>
-          <option value="bull_grow">Bull Growing</option>
-          <option value="flat" selected>Flat</option>
-          <option value="bear_grow">Bear Growing</option>
-          <option value="bear_cross">Bear Cross ⚡</option>
-        </select>
-      </div>
-      <div class="fld">
-        <span class="fld-lbl">Bollinger Band</span>
-        <select id="boll">
-          <option value="lower_touch">Lower Touch</option>
-          <option value="near_lower">Near Lower</option>
-          <option value="middle" selected>Middle</option>
-          <option value="near_upper">Near Upper</option>
-          <option value="upper_touch">Upper Touch</option>
-          <option value="squeeze">Squeeze</option>
-        </select>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- ══════════════ HISTORY TAB ══════════════ -->
@@ -351,10 +291,6 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <div class="pg" id="pg-rules">
   <div class="card">
     <div class="card-ttl" style="color:#f5b93a">📋 Rules from Live Testing</div>
-    <div class="rule r">
-      <div class="rule-t">🚨 Rule #1 — Payout</div>
-      <div class="rule-b"><b style="color:#ff2d55">Never trade if payout &lt; 85%.</b> Every trade below 85% lost in testing. Broker lowers payouts when their model sees chop.</div>
-    </div>
     <div class="rule">
       <div class="rule-t">🎯 Rule #2 — Sentiment</div>
       <div class="rule-b">Trade <b style="color:#00ff9d">contrarian</b> on extremes:<br>• ≥75% BUY → trade PUT<br>• ≥75% SELL → trade CALL<br>• 40–60% → 50/50 trap, skip</div>
@@ -373,7 +309,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
     <div class="rule">
       <div class="rule-t">🚀 Rule #6 — Backend</div>
-      <div class="rule-b">Deploy <code style="color:#00d9ff">backend/</code> to Render.com (free tier). Paste the URL in Signal tab. All indicators are calculated server-side from real Binance WebSocket + Yahoo Finance data — no manual input needed.</div>
+      <div class="rule-b">Deploy <code style="color:#00d9ff">backend/</code> to Render.com (free tier). Paste the URL in Signal tab. All indicators are calculated server-side from real Binance WebSocket + TwelveData — no manual input needed.</div>
     </div>
   </div>
 </div>
@@ -411,20 +347,6 @@ function tab(name,btn){
   }catch(e){}
 }
 
-function brokCheck(){
-  try{
-    var p=gN('payout'),s=gN('sent');
-    var pp=id('payoutPill'),sp=id('sentPill');
-    if(p<85){pp.textContent='🚨 DO NOT TRADE';pp.className='pill r';}
-    else if(p<90){pp.textContent='⚠ LOW';pp.className='pill y';}
-    else{pp.textContent='✓ OK ('+p+'%)';pp.className='pill g';}
-    if(s>=75){sp.textContent='🎯 Extreme BUY → PUT';sp.className='pill r';}
-    else if(s<=25){sp.textContent='🎯 Extreme SELL → CALL';sp.className='pill g';}
-    else if(s>=40&&s<=60){sp.textContent='⚠ 50/50 Trap';sp.className='pill y';}
-    else if(s>60){sp.textContent='Buy-lean → PUT bias';sp.className='pill y';}
-    else{sp.textContent='Sell-lean → CALL bias';sp.className='pill y';}
-  }catch(e){}
-}
 
 // ── Asset key helper ───────────────────────────────
 function assetKey(){
@@ -535,36 +457,9 @@ function reportTradeResult(result){
   }).catch(function(){});
 }
 
-// ── Auto-fill inputs from backend indicator data ───
+// ── Auto-fill live indicator display card from backend ───
 function applyBackendIndicators(ind){
   if(!ind)return;
-  // RSI
-  if(ind.rsi!=null&&!isNaN(ind.rsi)){id('rsi').value=Math.round(ind.rsi);}
-  // Trend
-  if(ind.trend){id('trend').value=ind.trend;}
-  // MACD
-  if(ind.macd!=null&&ind.macdSignal!=null){
-    var m=id('macd'),mv='flat';
-    var pm=ind.prevMacd!=null?ind.prevMacd:ind.macd;
-    var ps=ind.prevMacdSignal!=null?ind.prevMacdSignal:ind.macdSignal;
-    if(pm<ps&&ind.macd>=ind.macdSignal)mv='bull_cross';
-    else if(pm>ps&&ind.macd<=ind.macdSignal)mv='bear_cross';
-    else if(ind.macd>ind.macdSignal&&ind.macd>pm)mv='bull_grow';
-    else if(ind.macd<ind.macdSignal&&ind.macd<pm)mv='bear_grow';
-    else if(ind.macd>ind.macdSignal)mv='bull_grow';
-    else if(ind.macd<ind.macdSignal)mv='bear_grow';
-    m.value=mv;
-  }
-  // Bollinger
-  if(ind.bbPct!=null){
-    var b=id('boll'),bv='middle';
-    var p=ind.bbPct;
-    if(p<=0.05)bv='lower_touch';
-    else if(p<=0.2)bv='near_lower';
-    else if(p>=0.95)bv='upper_touch';
-    else if(p>=0.8)bv='near_upper';
-    b.value=bv;
-  }
   // Live indicator display card
   var ic=id('indCard');
   if(ic){
@@ -642,56 +537,6 @@ function toggleAutoRefresh(){
   }
 }
 
-// ── Local indicator strategies (fallback) ──────────
-function sTrend(d){
-  if(d.trend==='strong_up')return{dir:'CALL',c:85,r:'Strong uptrend',used:['trend']};
-  if(d.trend==='up')return{dir:'CALL',c:74,r:'4/5 green',used:['trend']};
-  if(d.trend==='strong_down')return{dir:'PUT',c:85,r:'Strong downtrend',used:['trend']};
-  if(d.trend==='down')return{dir:'PUT',c:74,r:'4/5 red',used:['trend']};
-  if(d.rsi<50)return{dir:'CALL',c:66,r:'Mixed+RSI<50',used:['trend','rsi']};
-  return{dir:'PUT',c:66,r:'Mixed+RSI>50',used:['trend','rsi']};
-}
-function sRSI(d){
-  var r=d.rsi;
-  if(r<=25)return{dir:'CALL',c:92,r:'RSI '+r+' deeply oversold',used:['rsi']};
-  if(r<=35)return{dir:'CALL',c:82,r:'RSI '+r+' oversold',used:['rsi']};
-  if(r<50)return{dir:'CALL',c:68,r:'RSI '+r+' below 50',used:['rsi']};
-  if(r>=75)return{dir:'PUT',c:92,r:'RSI '+r+' deeply overbought',used:['rsi']};
-  if(r>=65)return{dir:'PUT',c:82,r:'RSI '+r+' overbought',used:['rsi']};
-  if(r>50)return{dir:'PUT',c:68,r:'RSI '+r+' above 50',used:['rsi']};
-  return{dir:'WAIT',c:0,r:'RSI 50',used:[]};
-}
-function sMACD(d){
-  var m=d.macd;
-  if(m==='bull_cross')return{dir:'CALL',c:88,r:'MACD bull cross',used:['macd']};
-  if(m==='bull_grow')return{dir:'CALL',c:76,r:'MACD rising',used:['macd']};
-  if(m==='bear_cross')return{dir:'PUT',c:88,r:'MACD bear cross',used:['macd']};
-  if(m==='bear_grow')return{dir:'PUT',c:76,r:'MACD falling',used:['macd']};
-  return d.rsi<=50?{dir:'CALL',c:65,r:'MACD flat+RSI low',used:['macd','rsi']}:{dir:'PUT',c:65,r:'MACD flat+RSI high',used:['macd','rsi']};
-}
-function sBoll(d){
-  var b=d.boll,r=d.rsi;
-  if(b==='lower_touch')return{dir:'CALL',c:r<=40?90:76,r:'Lower BB touch',used:['boll'].concat(r<=40?['rsi']:[])};
-  if(b==='near_lower')return{dir:'CALL',c:72,r:'Near lower BB',used:['boll']};
-  if(b==='upper_touch')return{dir:'PUT',c:r>=60?90:76,r:'Upper BB touch',used:['boll'].concat(r>=60?['rsi']:[])};
-  if(b==='near_upper')return{dir:'PUT',c:72,r:'Near upper BB',used:['boll']};
-  if(b==='squeeze'){
-    var t=d.trend;
-    if(t.indexOf('up')>=0)return{dir:'CALL',c:70,r:'BB squeeze+up',used:['boll','trend']};
-    if(t.indexOf('down')>=0)return{dir:'PUT',c:70,r:'BB squeeze+down',used:['boll','trend']};
-    return{dir:'WAIT',c:0,r:'Squeeze+mixed',used:[]};
-  }
-  if(r<45)return{dir:'CALL',c:66,r:'Mid BB+RSI low',used:['boll','rsi']};
-  if(r>55)return{dir:'PUT',c:66,r:'Mid BB+RSI high',used:['boll','rsi']};
-  return{dir:'WAIT',c:0,r:'Mid BB neutral',used:[]};
-}
-
-// ── Local score functions ──────────────────────────
-function trendScore(t){return{strong_up:1.0,up:0.6,mixed:0,down:-0.6,strong_down:-1.0}[t]||0;}
-function rsiScoreV(r){if(r<=25)return 1.0;if(r<=35)return 0.7;if(r<50)return 0.3;if(r>=75)return -1.0;if(r>=65)return -0.7;if(r>50)return -0.3;return 0;}
-function macdScoreV(m){if(m==='bull_cross')return 1.0;if(m==='bull_grow')return 0.6;if(m==='bear_cross')return -1.0;if(m==='bear_grow')return -0.6;return 0;}
-function bollScoreV(b){if(b==='lower_touch')return 1.0;if(b==='near_lower')return 0.5;if(b==='upper_touch')return -1.0;if(b==='near_upper')return -0.5;return 0;}
-function sentimentScoreV(s){if(s>=75)return -1.0;if(s>=65)return -0.6;if(s<=25)return 1.0;if(s<=35)return 0.6;return 0;}
 function normalizeScore(s){return Math.round(60+(Math.tanh(s*0.9)*35));}
 
 // ── Main GENERATE ──────────────────────────────────
@@ -768,50 +613,8 @@ function gen(){
 }
 
 function runLocalGen(btn){
-  setTimeout(function(){
-    try{
-      var payout=gN('payout'),sent=gN('sent'),expiry=parseInt(gV('exp'))||5;
-      if(payout<85){
-        showBlocked('🚨 BLOCKED: Payout '+payout+'% is below 85%. Live test: every sub-85% trade LOST. Switch asset or wait.');
-        btn.textContent='⚡ GENERATE';return;
-      }
-      var d={asset:gV('asset'),expiry:expiry,stake:gN('stake'),payout:payout,sent:sent,rsi:gN('rsi'),trend:gV('trend'),macd:gV('macd'),boll:gV('boll')};
-      var strats=[
-        {n:'TREND',icon:'📈',res:sTrend(d),w:W.trend},
-        {n:'RSI',icon:'🎯',res:sRSI(d),w:W.rsi},
-        {n:'MACD',icon:'⚡',res:sMACD(d),w:W.macd},
-        {n:'BOLLINGER',icon:'📊',res:sBoll(d),w:W.boll}
-      ];
-      var score=W.trend*trendScore(d.trend)+W.rsi*rsiScoreV(d.rsi)+W.macd*macdScoreV(d.macd)+W.boll*bollScoreV(d.boll)+1.2*sentimentScoreV(sent);
-      var cV=0,pV=0;
-      strats.forEach(function(s){if(s.res.dir==='CALL')cV++;else if(s.res.dir==='PUT')pV++;});
-      var dir,conf,note='';
-      if(score>ADAPT.scoreThreshold){dir='CALL';conf=normalizeScore(score);}
-      else if(score<-ADAPT.scoreThreshold){dir='PUT';conf=normalizeScore(score);}
-      else if(cV>pV&&cV>=2){dir='CALL';conf=Math.max(60,normalizeScore(Math.abs(score)+0.3));}
-      else if(pV>cV&&pV>=2){dir='PUT';conf=Math.max(60,normalizeScore(Math.abs(score)+0.3));}
-      else{dir='WAIT';conf=0;}
-      conf=Math.max(50,Math.min(97,conf));
-      if(sent>=75&&dir==='PUT')note+=' • 🎯 Contrarian PUT';
-      if(sent<=25&&dir==='CALL')note+=' • 🎯 Contrarian CALL';
-      if(sent>=40&&sent<=60&&dir!=='WAIT')note+=' • ⚠ 50/50 sent';
-      if(payout<90){conf=Math.max(50,conf-5);note+=' • Low payout';}
-      if(expiry===1&&dir!=='WAIT')note+=' • 1-MIN risky';
-      var reasons=[];
-      strats.forEach(function(s){if(s.res.dir===dir)reasons.push(s.res.r);});
-      var reasonText='Score: '+score.toFixed(2)+' • '+reasons.join(' • ')+note;
-      showSig(dir,conf,d,reasonText,strats);
-      var used=[];
-      strats.forEach(function(s){if(s.res.dir===dir)s.res.used.forEach(function(u){if(used.indexOf(u)<0)used.push(u);});});
-      last={
-        dir:dir,conf:conf,asset:d.asset,expiry:d.expiry,stake:d.stake,
-        time:new Date(),used:used,score:score,
-        ctx:{trend:d.trend,rsi:d.rsi,macd:d.macd,boll:d.boll,sent:sent,payout:payout},
-        factors:{trend:trendScore(d.trend),rsi:rsiScoreV(d.rsi),macd:macdScoreV(d.macd),boll:bollScoreV(d.boll),sent:sentimentScoreV(sent)}
-      };
-      btn.textContent='⚡ GENERATE';
-    }catch(e){btn.textContent='⚡ GENERATE';}
-  },300);
+  btn.textContent='⚡ GENERATE';
+  showBlocked('⚠️ No backend connected — paste your Render URL in the green box above and tap TEST CONNECTION. Signals require live data from the backend.');
 }
 
 function showSig(dir,conf,d,reason,strats){
@@ -881,7 +684,7 @@ function renderDoubleUp(dir,conf,d,strats){
       html+='<button type="button" class="'+cls+'" data-x="'+mx.x+'" onclick="selectMult('+mx.x+')">'+'<div class="mult-lbl">'+mx.lbl+'</div><div class="mult-sub">'+mx.sub+'</div></button>';
     });
     id('multGrid').innerHTML=html;
-    updateMultSummary(1,d.stake,gN('payout'),dir,d.asset,d.expiry);
+    updateMultSummary(1,d.stake,dir,d.asset,d.expiry);
     var rollText='';
     if(consL>=2){rollText='❌ Do NOT roll over after '+consL+' losses.';}
     else if(conf>=78&&agree>=3){rollText='✅ OK to roll over if: (1) <60% expiry passed AND (2) price near entry AND (3) signal unchanged.';}
@@ -897,14 +700,14 @@ function selectMult(x){
       b.classList.remove('selected');
       if(parseInt(b.getAttribute('data-x'))===x&&!b.classList.contains('locked'))b.classList.add('selected');
     });
-    updateMultSummary(x,gN('stake'),gN('payout'),last?last.dir:'CALL',gV('asset'),parseInt(gV('exp'))||5);
+    updateMultSummary(x,gN('stake'),last?last.dir:'CALL',gV('asset'),parseInt(gV('exp'))||5);
   }catch(e){}
 }
 
-function updateMultSummary(x,baseStake,payout,dir,asset,expiry){
+function updateMultSummary(x,baseStake,dir,asset,expiry){
   try{
     var totalStake=baseStake*x;
-    var totalWin=totalStake*(payout/100);
+    var totalWin=totalStake*0.85; // approximate — actual payout shown on PocketOption
     var riskColor=x===1?'#00ff9d':x===2?'#f5b93a':'#ff2d55';
     var riskLabel=x===1?'SAFE':x===2?'MODERATE':x===3?'AGGRESSIVE':'MAX RISK';
     var s='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:10px">'
@@ -1021,18 +824,18 @@ function renderHist(){
 function calibrate(){
   var btn=id('calBtn');
   btn.disabled=true;
+  btn.textContent='📡 1/3...';
+  // 3 back-to-back backend signal fetches → consensus
   var round=0,votes={CALL:0,PUT:0,WAIT:0},confSum=0;
-  var origRsi=gN('rsi');
   function scan(){
     round++;
     btn.textContent='📡 '+round+'/3...';
-    id('rsi').value=Math.max(0,Math.min(100,Math.round(origRsi+(Math.random()-.5)*4)));
     gen();
     setTimeout(function(){
       if(last){votes[last.dir]=(votes[last.dir]||0)+1;if(last.dir!=='WAIT')confSum+=last.conf;}
-      if(round<3){setTimeout(scan,500);}
+      if(round<3){setTimeout(scan,1000);}
       else{
-        id('rsi').value=origRsi;btn.disabled=false;btn.textContent='🔄 CALIBRATE';
+        btn.disabled=false;btn.textContent='🔄 CALIBRATE';
         var finalDir='WAIT';
         if(votes.CALL>votes.PUT&&votes.CALL>votes.WAIT)finalDir='CALL';
         else if(votes.PUT>votes.CALL&&votes.PUT>votes.WAIT)finalDir='PUT';
@@ -1040,18 +843,19 @@ function calibrate(){
         var rsn=id('sigReason');
         if(rsn){
           var resCol=finalDir==='CALL'?'#00ff9d':finalDir==='PUT'?'#ff2d55':'#f5b93a';
-          rsn.innerHTML='<b style="color:'+resCol+'">🔄 CALIBRATED ('+count+'/3 agreed)</b><br>'
+          rsn.innerHTML+='<div style="margin-top:10px;padding:10px;background:#0a0f1c;border-radius:8px;border:1px solid '+resCol+'22">'
+            +'<b style="color:'+resCol+'">🔄 CALIBRATED ('+count+'/3 agreed)</b><br>'
             +'CALL: '+(votes.CALL||0)+' • PUT: '+(votes.PUT||0)+' • WAIT: '+(votes.WAIT||0)+'<br>'
-            +(count===3?'<b style="color:#00ff9d">⚡ All 3 agreed — HIGH CONFIDENCE</b>':count===2?'<span style="color:#f5b93a">2/3 agreed — moderate</span>':'<span style="color:#ff2d55">No consensus — skip this setup</span>');
+            +(count===3?'<b style="color:#00ff9d">⚡ All 3 agreed — HIGH CONFIDENCE</b>':count===2?'<span style="color:#f5b93a">2/3 agreed — moderate</span>':'<span style="color:#ff2d55">No consensus — skip this setup</span>')
+            +'</div>';
         }
       }
-    },420);
+    },800);
   }
   scan();
 }
 
 // ── Init ───────────────────────────────────────────
-brokCheck();
 updateLearnPill();
 renderHist();
 
