@@ -3,296 +3,221 @@
 const fetch = require('node-fetch');
 const WebSocket = require('ws');
 
-// Asset registry — maps internal symbol to data-source config
+const TD_BASE    = 'https://api.twelvedata.com';
+const BN_REST    = 'https://api.binance.com/api/v3/klines';
+const BN_WS      = 'wss://stream.binance.com:9443/ws';
+
 const ASSETS = {
-  eurusd:  { yahoo: 'EURUSD=X',  binance: null,      type: 'forex',     base: 'EUR', quote: 'USD' },
-  gbpusd:  { yahoo: 'GBPUSD=X',  binance: null,      type: 'forex',     base: 'GBP', quote: 'USD' },
-  eurjpy:  { yahoo: 'EURJPY=X',  binance: null,      type: 'forex',     base: 'EUR', quote: 'JPY' },
-  usdjpy:  { yahoo: 'USDJPY=X',  binance: null,      type: 'forex',     base: 'USD', quote: 'JPY' },
-  audusd:  { yahoo: 'AUDUSD=X',  binance: null,      type: 'forex',     base: 'AUD', quote: 'USD' },
-  usdcad:  { yahoo: 'USDCAD=X',  binance: null,      type: 'forex',     base: 'USD', quote: 'CAD' },
-  gbpjpy:  { yahoo: 'GBPJPY=X',  binance: null,      type: 'forex',     base: 'GBP', quote: 'JPY' },
-  btcusd:  { yahoo: 'BTC-USD',   binance: 'btcusdt', type: 'crypto',    base: 'BTC', quote: 'USD' },
-  ethusd:  { yahoo: 'ETH-USD',   binance: 'ethusdt', type: 'crypto',    base: 'ETH', quote: 'USD' },
-  gold:    { yahoo: 'GC=F',      binance: null,      type: 'commodity', base: 'XAU', quote: 'USD' },
+  eurusd: { td: 'EUR/USD',  binance: null,      type: 'forex' },
+  gbpusd: { td: 'GBP/USD',  binance: null,      type: 'forex' },
+  eurjpy: { td: 'EUR/JPY',  binance: null,      type: 'forex' },
+  usdjpy: { td: 'USD/JPY',  binance: null,      type: 'forex' },
+  audusd: { td: 'AUD/USD',  binance: null,      type: 'forex' },
+  usdcad: { td: 'USD/CAD',  binance: null,      type: 'forex' },
+  gbpjpy: { td: 'GBP/JPY',  binance: null,      type: 'forex' },
+  btcusd: { td: 'BTC/USD',  binance: 'btcusdt', type: 'crypto' },
+  ethusd: { td: 'ETH/USD',  binance: 'ethusdt', type: 'crypto' },
+  gold:   { td: 'XAU/USD',  binance: null,      type: 'commodity' },
 };
 
-const YAHOO_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-  'Accept': 'application/json',
-  'Accept-Language': 'en-US,en;q=0.9',
-};
+// ─── Rate-limited request queue ───────────────────
+// TwelveData free tier: 8 req/min, 800 credits/day
+// We process 1 request every 8.5 seconds → ~7/min (safe buffer)
+class RequestQueue {
+  constructor(intervalMs = 8500) {
+    this.queue = [];
+    this.timer = null;
+    this.intervalMs = intervalMs;
+  }
+  enqueue(fn) {
+    return new Promise((resolve, reject) => {
+      this.queue.push({ fn, resolve, reject });
+      if (!this.timer) this._tick();
+    });
+  }
+  _tick() {
+    if (!this.queue.length) { this.timer = null; return; }
+    const { fn, resolve, reject } = this.queue.shift();
+    fn().then(resolve).catch(reject);
+    this.timer = setTimeout(() => this._tick(), this.intervalMs);
+  }
+}
 
-const BINANCE_REST = 'https://api.binance.com/api/v3/klines';
-const BINANCE_WS   = 'wss://stream.binance.com:9443/ws';
-const YAHOO_CHART  = 'https://query2.finance.yahoo.com/v8/finance/chart';
-
-// Spot-price fallback for forex (open.er-api.com, truly free, no key)
-const ER_API = 'https://open.er-api.com/v6/latest';
-
+// ─── DataManager ──────────────────────────────────
 class DataManager {
   constructor() {
-    this.store = {};  // { symbol: { '5m': Candle[], currentPrice, lastUpdate, source } }
-    this.wsSockets = {};
-    this.tickBuffers = {}; // for fallback candle building from spot ticks
-    this.pollTimers = {};
+    this.store   = {};
+    this.sockets = {};
+    this.tdKey   = process.env.TWELVEDATA_API_KEY || '';
+    this.queue   = new RequestQueue(8500);
+    // 15-minute freshness window per asset (keeps daily credits low)
+    this.STALE_MS = 15 * 60 * 1000;
 
     for (const sym of Object.keys(ASSETS)) {
       this.store[sym] = { '5m': [], currentPrice: 0, lastUpdate: 0, source: 'none' };
-      this.tickBuffers[sym] = { current: null, completed: [] };
     }
   }
 
   async initialize() {
-    console.log('[DataManager] Warming all asset streams...');
-    await Promise.allSettled(Object.keys(ASSETS).map(sym => this._boot(sym)));
-    console.log('[DataManager] Initial warm complete.');
-    this._scheduleRefresh();
-  }
-
-  // ─────────────────────────────────────────────────
-  // Public API
-  // ─────────────────────────────────────────────────
-  getCandles(sym, tf = '5m') { return this.store[sym]?.[tf] || []; }
-  getCurrentPrice(sym)       { return this.store[sym]?.currentPrice || 0; }
-  getLastUpdate(sym)         { return this.store[sym]?.lastUpdate || 0; }
-  isReady(sym)               { return (this.store[sym]?.['5m'] || []).length >= 30; }
-
-  getStatus() {
-    const out = {};
-    for (const sym of Object.keys(ASSETS)) {
-      const s = this.store[sym];
-      out[sym] = {
-        candles: s['5m'].length,
-        source:  s.source,
-        price:   s.currentPrice,
-        ready:   this.isReady(sym),
-        age:     s.lastUpdate ? Math.floor((Date.now() - s.lastUpdate) / 1000) : null,
-      };
+    if (!this.tdKey) {
+      console.warn('[DataManager] ⚠️  TWELVEDATA_API_KEY not set — forex/gold signals disabled. Set it in Render env vars.');
+    } else {
+      console.log('[DataManager] TwelveData key found ✓');
     }
-    return out;
-  }
 
-  // ─────────────────────────────────────────────────
-  // Boot sequence per asset
-  // ─────────────────────────────────────────────────
-  async _boot(sym) {
-    const cfg = ASSETS[sym];
-    if (cfg.binance) {
-      await this._fetchBinance(sym, cfg.binance);
-      this._connectBinanceWS(sym, cfg.binance);
+    // Crypto: Binance REST bootstrap → WebSocket (no key, no rate limit)
+    for (const [sym, cfg] of Object.entries(ASSETS)) {
+      if (cfg.binance) {
+        await this._fetchBinanceREST(sym, cfg.binance);
+        this._connectBinanceWS(sym, cfg.binance);
+      }
     }
-    // Always try Yahoo (good for all assets, and richer data for crypto too)
-    await this._fetchYahoo(sym, cfg.yahoo);
 
-    // If still not ready, fall back to spot-price polling
-    if (!this.isReady(sym) && cfg.type === 'forex') {
-      this._startSpotPolling(sym, cfg);
-    }
-  }
-
-  _scheduleRefresh() {
-    // Refresh Yahoo every 5 min for all non-Binance assets
-    setInterval(async () => {
+    // Forex + Gold: queue TwelveData fetches (rate limited)
+    if (this.tdKey) {
       for (const [sym, cfg] of Object.entries(ASSETS)) {
-        if (!cfg.binance) {
-          await this._fetchYahoo(sym, cfg.yahoo).catch(() => {});
-        }
+        if (!cfg.binance) this._queueTD(sym);
       }
-    }, 5 * 60 * 1000);
+    }
   }
 
-  // ─────────────────────────────────────────────────
-  // Yahoo Finance (5-min OHLCV)
-  // ─────────────────────────────────────────────────
-  async _fetchYahoo(sym, yahooSym) {
-    const url = `${YAHOO_CHART}/${encodeURIComponent(yahooSym)}?interval=5m&range=2d&includePrePost=false`;
+  // Called by /signal route before generating — refreshes if stale
+  async ensureFresh(sym) {
+    const cfg = ASSETS[sym];
+    if (!cfg || cfg.binance) return; // crypto stays fresh via WS
+    if (!this.tdKey) return;
+    const age = Date.now() - (this.store[sym]?.lastUpdate || 0);
+    if (age < this.STALE_MS) return; // still fresh — skip
+    return this._queueTD(sym);
+  }
+
+  // ── TwelveData fetch ──────────────────────────────
+  _queueTD(sym) {
+    return this.queue.enqueue(() => this._fetchTD(sym));
+  }
+
+  async _fetchTD(sym) {
+    const cfg = ASSETS[sym];
+    if (!cfg || !this.tdKey) return;
+
+    const url = `${TD_BASE}/time_series?symbol=${encodeURIComponent(cfg.td)}&interval=5min&outputsize=150&apikey=${this.tdKey}`;
     try {
-      const res = await fetch(url, { headers: YAHOO_HEADERS, timeout: 12000 });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res  = await fetch(url, { timeout: 15000 });
       const data = await res.json();
-      const result = data?.chart?.result?.[0];
-      if (!result) throw new Error('empty result');
 
-      const timestamps = result.timestamp || [];
-      const q = result.indicators?.quote?.[0] || {};
-      const { open = [], high = [], low = [], close = [], volume = [] } = q;
-
-      const candles = [];
-      for (let i = 0; i < timestamps.length; i++) {
-        if (close[i] == null || isNaN(close[i])) continue;
-        candles.push({
-          t: timestamps[i] * 1000,
-          o: open[i]   ?? close[i],
-          h: high[i]   ?? close[i],
-          l: low[i]    ?? close[i],
-          c: close[i],
-          v: volume[i] ?? 0,
-        });
+      if (data.status === 'error') {
+        console.warn(`[TwelveData] ${sym}: ${data.message}`);
+        return;
+      }
+      if (!Array.isArray(data.values) || !data.values.length) {
+        console.warn(`[TwelveData] ${sym}: empty values`);
+        return;
       }
 
-      if (candles.length >= 10) {
-        const s = this.store[sym];
-        // If we already have better live data from Binance, only update if Yahoo has more
-        if (candles.length > s['5m'].length || s.source === 'none' || s.source === 'spot-poll') {
-          s['5m'] = candles;
-          s.currentPrice = candles[candles.length - 1].c;
-          s.lastUpdate   = Date.now();
-          s.source       = 'yahoo';
-          console.log(`[DataManager] ${sym}: ${candles.length} candles via Yahoo (${yahooSym})`);
-        }
-      }
-    } catch (err) {
-      console.warn(`[DataManager] Yahoo failed for ${sym}: ${err.message}`);
-      // Try alternate Yahoo URL format
-      await this._fetchYahooAlt(sym, yahooSym).catch(() => {});
-    }
-  }
+      // TwelveData returns newest-first — reverse to chronological
+      const candles = data.values.slice().reverse().map(v => ({
+        t: new Date(v.datetime + 'Z').getTime(),
+        o: parseFloat(v.open),
+        h: parseFloat(v.high),
+        l: parseFloat(v.low),
+        c: parseFloat(v.close),
+        v: parseFloat(v.volume) || 0,
+      })).filter(c => !isNaN(c.c));
 
-  async _fetchYahooAlt(sym, yahooSym) {
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yahooSym)}?interval=5m&range=1d`;
-    const res = await fetch(url, { headers: YAHOO_HEADERS, timeout: 10000 });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    const result = data?.chart?.result?.[0];
-    if (!result) throw new Error('empty');
+      if (candles.length < 10) return;
 
-    const timestamps = result.timestamp || [];
-    const q = result.indicators?.quote?.[0] || {};
-    const candles = [];
-    for (let i = 0; i < timestamps.length; i++) {
-      const c = q.close?.[i];
-      if (c == null || isNaN(c)) continue;
-      candles.push({ t: timestamps[i] * 1000, o: q.open?.[i] ?? c, h: q.high?.[i] ?? c, l: q.low?.[i] ?? c, c, v: q.volume?.[i] ?? 0 });
-    }
-    if (candles.length >= 10) {
-      const s = this.store[sym];
-      s['5m'] = candles;
+      const s        = this.store[sym];
+      s['5m']        = candles;
       s.currentPrice = candles[candles.length - 1].c;
       s.lastUpdate   = Date.now();
-      s.source       = 'yahoo-alt';
-      console.log(`[DataManager] ${sym}: ${candles.length} candles via Yahoo-alt`);
+      s.source       = 'twelvedata';
+      console.log(`[TwelveData] ${sym}: ${candles.length} candles (${cfg.td})`);
+    } catch (err) {
+      console.warn(`[TwelveData] ${sym} fetch error: ${err.message}`);
     }
   }
 
-  // ─────────────────────────────────────────────────
-  // Binance REST (bootstrap)
-  // ─────────────────────────────────────────────────
-  async _fetchBinance(sym, binSym) {
-    const url = `${BINANCE_REST}?symbol=${binSym.toUpperCase()}&interval=5m&limit=200`;
+  // ── Binance REST (crypto bootstrap) ──────────────
+  async _fetchBinanceREST(sym, binSym) {
+    const url = `${BN_REST}?symbol=${binSym.toUpperCase()}&interval=5m&limit=200`;
     try {
-      const res = await fetch(url, { timeout: 12000 });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const res  = await fetch(url, { timeout: 12000 });
       const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('Not array');
+      if (!Array.isArray(data)) return;
+
       const candles = data.map(k => ({
-        t: k[0],
-        o: parseFloat(k[1]),
-        h: parseFloat(k[2]),
-        l: parseFloat(k[3]),
-        c: parseFloat(k[4]),
-        v: parseFloat(k[5]),
+        t: k[0], o: +k[1], h: +k[2], l: +k[3], c: +k[4], v: +k[5],
       }));
-      const s = this.store[sym];
-      s['5m'] = candles;
+
+      const s        = this.store[sym];
+      s['5m']        = candles;
       s.currentPrice = candles[candles.length - 1].c;
       s.lastUpdate   = Date.now();
       s.source       = 'binance';
-      console.log(`[DataManager] ${sym}: ${candles.length} candles via Binance REST`);
+      console.log(`[Binance REST] ${sym}: ${candles.length} candles`);
     } catch (err) {
-      console.warn(`[DataManager] Binance REST failed for ${sym}: ${err.message}`);
+      console.warn(`[Binance REST] ${sym}: ${err.message}`);
     }
   }
 
-  // ─────────────────────────────────────────────────
-  // Binance WebSocket (real-time 5m kline)
-  // ─────────────────────────────────────────────────
+  // ── Binance WebSocket (crypto real-time) ─────────
   _connectBinanceWS(sym, binSym) {
-    const url = `${BINANCE_WS}/${binSym}@kline_5m`;
     const reconnect = () => setTimeout(() => this._connectBinanceWS(sym, binSym), 5000);
-
     try {
-      const ws = new WebSocket(url);
-      this.wsSockets[sym] = ws;
+      const ws = new WebSocket(`${BN_WS}/${binSym}@kline_5m`);
+      this.sockets[sym] = ws;
 
-      ws.on('open', () => console.log(`[DataManager] Binance WS open: ${sym}`));
+      ws.on('open', () => console.log(`[Binance WS] ${sym} connected`));
 
       ws.on('message', raw => {
         try {
-          const msg = JSON.parse(raw);
-          const k = msg.k;
+          const k = JSON.parse(raw).k;
           if (!k) return;
-          const candle = { t: k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v };
+          const c   = { t: k.t, o: +k.o, h: +k.h, l: +k.l, c: +k.c, v: +k.v };
           const arr = this.store[sym]['5m'];
-          if (arr.length && arr[arr.length - 1].t === candle.t) {
-            arr[arr.length - 1] = candle;
+          if (arr.length && arr[arr.length - 1].t === c.t) {
+            arr[arr.length - 1] = c;
           } else if (k.x) {
-            arr.push(candle);
+            arr.push(c);
             if (arr.length > 300) arr.shift();
           }
-          this.store[sym].currentPrice = candle.c;
+          this.store[sym].currentPrice = c.c;
           this.store[sym].lastUpdate   = Date.now();
           this.store[sym].source       = 'binance-ws';
         } catch (e) {}
       });
 
-      ws.on('close', () => { console.warn(`[DataManager] Binance WS closed: ${sym}`); reconnect(); });
-      ws.on('error', err => { console.warn(`[DataManager] Binance WS error: ${sym}: ${err.message}`); });
+      ws.on('close', () => {
+        console.warn(`[Binance WS] ${sym} closed — reconnecting in 5s`);
+        reconnect();
+      });
+      ws.on('error', err => console.warn(`[Binance WS] ${sym}: ${err.message}`));
     } catch (err) {
-      console.warn(`[DataManager] WS connect failed: ${sym}`);
       reconnect();
     }
   }
 
-  // ─────────────────────────────────────────────────
-  // Spot-price polling fallback (forex, no Yahoo)
-  // Builds synthetic 5-min candles from spot ticks
-  // ─────────────────────────────────────────────────
-  _startSpotPolling(sym, cfg) {
-    if (this.pollTimers[sym]) return;
-    console.log(`[DataManager] Starting spot-poll fallback for ${sym}`);
-    const poll = async () => {
-      try {
-        const res = await fetch(`${ER_API}/${cfg.base}`, { timeout: 8000 });
-        if (!res.ok) return;
-        const data = await res.json();
-        const price = data.rates?.[cfg.quote];
-        if (!price) return;
-        this._addTick(sym, price);
-      } catch (e) {}
-    };
-    poll();
-    this.pollTimers[sym] = setInterval(poll, 30000); // every 30 seconds
-  }
+  // ── Public getters ────────────────────────────────
+  getCandles(sym, tf = '5m') { return this.store[sym]?.[tf] || []; }
+  getCurrentPrice(sym)       { return this.store[sym]?.currentPrice || 0; }
+  getLastUpdate(sym)         { return this.store[sym]?.lastUpdate   || 0; }
+  isReady(sym)               { return (this.store[sym]?.['5m'] || []).length >= 30; }
+  hasTDKey()                 { return !!this.tdKey; }
 
-  _addTick(sym, price) {
-    const now = Date.now();
-    const FIVE_MIN = 5 * 60 * 1000;
-    const bucket = Math.floor(now / FIVE_MIN) * FIVE_MIN;
-    const tb = this.tickBuffers[sym];
-
-    if (tb.current && tb.current.t === bucket) {
-      tb.current.h = Math.max(tb.current.h, price);
-      tb.current.l = Math.min(tb.current.l, price);
-      tb.current.c = price;
-      tb.current.v += 1;
-    } else {
-      if (tb.current) {
-        tb.completed.push(tb.current);
-        if (tb.completed.length > 200) tb.completed.shift();
-      }
-      tb.current = { t: bucket, o: price, h: price, l: price, c: price, v: 1 };
-    }
-
-    // Merge completed candles back into store
-    const all = [...tb.completed, tb.current].filter(Boolean);
-    if (all.length >= 5) {
+  getStatus() {
+    const out = {};
+    for (const [sym, cfg] of Object.entries(ASSETS)) {
       const s = this.store[sym];
-      s['5m'] = all;
-      s.currentPrice = price;
-      s.lastUpdate   = now;
-      s.source       = 'spot-poll';
+      out[sym] = {
+        type:    cfg.type,
+        source:  s.source,
+        candles: s['5m'].length,
+        price:   s.currentPrice,
+        ready:   this.isReady(sym),
+        ageSeconds: s.lastUpdate ? Math.floor((Date.now() - s.lastUpdate) / 1000) : null,
+      };
     }
+    return out;
   }
 }
 

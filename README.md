@@ -4,8 +4,14 @@
 
 ---
 
-## Deploy Backend to Render.com (Free, 5 minutes)
+## Deploy Backend to Render.com (Free, ~10 minutes)
 
+### Step 1 — Get a free TwelveData API key
+1. Go to [twelvedata.com/register](https://twelvedata.com/register)
+2. Sign up free → copy your API key from the dashboard
+3. Free tier: **800 credits/day, 8 req/min** — enough for all 8 forex/gold assets
+
+### Step 2 — Deploy to Render
 1. Push this repo to GitHub
 2. Go to [render.com](https://render.com) → **New Web Service**
 3. Connect your GitHub repo
@@ -14,14 +20,16 @@
    - **Build Command:** `npm install`
    - **Start Command:** `node server.js`
    - **Plan:** Free
-5. Click **Deploy**
-6. Copy the URL (e.g. `https://quattro-ai-backend.onrender.com`)
-7. Paste it into the app's **Render Backend** field → tap **TEST CONNECTION**
+5. In **Environment Variables**, add:
+   - Key: `TWELVEDATA_API_KEY`
+   - Value: *(paste your TwelveData key)*
+6. Click **Deploy** → wait ~2 minutes
+7. Copy the URL (e.g. `https://quattro-ai-backend.onrender.com`)
+8. Paste it into the app's **Render Backend** field → tap **TEST CONNECTION**
 
-That's it. The backend auto-streams:
-- **BTC/USD, ETH/USD** — Binance WebSocket (real-time, zero latency)
-- **EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD, EUR/JPY, GBP/JPY** — Yahoo Finance (5-min OHLCV)
-- **GOLD** — Yahoo Finance futures (GC=F)
+### Data sources
+- **BTC/USD, ETH/USD** — Binance WebSocket (real-time, no key needed)
+- **EUR/USD, GBP/USD, USD/JPY, AUD/USD, USD/CAD, EUR/JPY, GBP/JPY, GOLD** — TwelveData (5-min OHLCV, requires key)
 
 ---
 
