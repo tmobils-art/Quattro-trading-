@@ -121,9 +121,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .ind-box{background:#05080f;border:1px solid #1a2336;border-radius:8px;padding:8px 10px}
 .ind-lbl{font-size:9px;color:#5a6b85;letter-spacing:1px;margin-bottom:3px}
 .ind-val{font-size:15px;font-weight:900;font-family:'SF Mono',monospace;color:#e8ecf5}
-/* Timer urgent pulse */
-@keyframes timerUrgent{0%,100%{box-shadow:0 0 0 0 rgba(255,45,85,.4)}50%{box-shadow:0 0 0 8px rgba(255,45,85,0)}}
-.timer-urgent{animation:timerUrgent 1s infinite!important;border-color:rgba(255,45,85,.5)!important}
+/* Auto-result toast */
+.toast{position:fixed;bottom:80px;left:14px;right:14px;padding:14px 16px;border-radius:12px;font-size:13px;font-weight:700;z-index:999;transform:translateY(20px);opacity:0;transition:all .35s cubic-bezier(.4,0,.2,1);pointer-events:none;line-height:1.5}
+.toast.show{transform:translateY(0);opacity:1;pointer-events:auto}
+.toast.win{background:linear-gradient(135deg,rgba(0,255,157,.18),rgba(0,217,255,.12));border:1px solid rgba(0,255,157,.4);color:#00ff9d}
+.toast.loss{background:linear-gradient(135deg,rgba(255,45,85,.18),rgba(255,122,0,.08));border:1px solid rgba(255,45,85,.4);color:#ff2d55}
+.toast.info{background:rgba(0,217,255,.1);border:1px solid rgba(0,217,255,.3);color:#00d9ff}
 /* Asset win rate badge */
 .awr{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;margin-left:6px;vertical-align:middle}
 .awr.good{background:rgba(0,255,157,.12);color:#00ff9d}
@@ -201,12 +204,13 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
   <!-- ── Trade Timer ── -->
   <div id="timerBox" style="display:none;margin:0 14px 14px;background:#0a0f1c;border:1px solid #1a2336;border-radius:12px;padding:14px;text-align:center">
-    <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#5a6b85;margin-bottom:6px">TRADE EXPIRES IN</div>
+    <div style="font-size:9px;font-weight:900;letter-spacing:2px;color:#5a6b85;margin-bottom:6px" id="timerLabel">TRADE EXPIRES IN</div>
     <div id="timerDisplay" style="font-size:48px;font-weight:900;font-family:'SF Mono',monospace;color:#00d9ff;letter-spacing:4px;line-height:1">00:00</div>
     <div style="margin-top:8px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;overflow:hidden">
       <div id="timerBar" style="height:100%;width:100%;background:linear-gradient(90deg,#00d9ff,#00ff9d);transition:width .95s linear;border-radius:2px"></div>
     </div>
-    <button onclick="resetTimer()" style="margin-top:10px;padding:6px 18px;background:transparent;border:1px solid #1a2336;color:#5a6b85;border-radius:8px;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:1.5px;cursor:pointer">■ STOP</button>
+    <div id="timerAutoNote" style="font-size:10px;color:#5a6b85;margin-top:6px;display:none">🤖 Auto-logging result at expiry</div>
+    <button onclick="resetTimer()" style="margin-top:8px;padding:6px 18px;background:transparent;border:1px solid #1a2336;color:#5a6b85;border-radius:8px;font-family:inherit;font-size:10px;font-weight:700;letter-spacing:1.5px;cursor:pointer">■ STOP</button>
   </div>
 
   <a href="https://pocketoption.com/en/cabinet/quick-high-low" target="_blank" rel="noopener" class="po-link">
@@ -354,6 +358,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     </div>
   </div>
 </div>
+
+<div class="toast" id="toast"></div>
 
 <div class="tbr">
   <button class="tbt on" onclick="tab('sig',this)">⚡ SIGNAL</button>
@@ -668,6 +674,7 @@ function gen(){
         last={
           dir:dir,conf:conf,asset:d.asset,expiry:d.expiry,stake:d.stake,
           time:new Date(),score:s.score,backend:true,
+          entryPrice:data.currentPrice||0,
           ctx:ind,
           factors:{
             rsi:sc.rsi||0,trend:sc.trend||0,macd:sc.macd||0,boll:sc.boll||0,
@@ -971,6 +978,15 @@ function calibrate(){
   scan();
 }
 
+// ── Toast ─────────────────────────────────────────
+var toastTimer=null;
+function showToast(msg,type,duration){
+  var t=id('toast');if(!t)return;
+  if(toastTimer)clearTimeout(toastTimer);
+  t.innerHTML=msg;t.className='toast '+(type||'info')+' show';
+  toastTimer=setTimeout(function(){t.classList.remove('show');},duration||4000);
+}
+
 // ── Trade Timer ───────────────────────────────────
 var timerState={interval:null,total:0,remaining:0};
 
@@ -979,7 +995,12 @@ function startTimer(minutes){
   var secs=minutes*60;
   timerState.total=secs;
   timerState.remaining=secs;
-  id('timerBox').style.display='block';
+  var box=id('timerBox');
+  if(box)box.style.display='block';
+  var note=id('timerAutoNote');
+  if(note)note.style.display=getBackendUrl()&&last?'block':'none';
+  var lbl=id('timerLabel');
+  if(lbl)lbl.textContent='TRADE EXPIRES IN';
   updateTimerDisplay();
   timerState.interval=setInterval(function(){
     timerState.remaining--;
@@ -987,11 +1008,65 @@ function startTimer(minutes){
     if(timerState.remaining<=0){
       clearInterval(timerState.interval);
       timerState.interval=null;
-      var d=id('timerDisplay');
-      if(d){d.textContent='DONE';d.style.color='#f5b93a';}
-      var b=id('timerBar');if(b)b.style.width='0%';
+      autoCheckOutcome();
     }
   },1000);
+}
+
+function autoCheckOutcome(){
+  var d=id('timerDisplay'),lbl=id('timerLabel');
+  if(d){d.textContent='DONE';d.style.color='#f5b93a';}
+  var b=id('timerBar');if(b)b.style.width='0%';
+  var box=id('timerBox');if(box)box.classList.remove('timer-urgent');
+
+  // Need a pending trade, an entry price, and backend URL
+  if(!last||!last.entryPrice||!getBackendUrl()){
+    if(hist.length&&hist[0].res==='pending'){
+      showToast('⏱ Trade expired — tap ✅ WIN or ❌ LOSS in History to log result','info',6000);
+    }
+    return;
+  }
+  if(!hist.length||hist[0].res!=='pending')return;
+
+  if(lbl)lbl.textContent='CHECKING RESULT...';
+  if(d)d.style.color='#00d9ff';
+
+  // Fetch current price at expiry
+  fetchBackendSignal().then(function(data){
+    var exitPrice=data&&data.currentPrice?data.currentPrice:0;
+    if(!exitPrice){
+      showToast('⚠️ Could not fetch exit price — tap WIN/LOSS manually','info',5000);
+      return;
+    }
+    var entry=last.entryPrice;
+    var dir=last.dir;
+    var priceDiff=exitPrice-entry;
+    var pips=Math.abs(priceDiff);
+    var pipsDisplay=entry>100?pips.toFixed(2):pips.toFixed(5);
+
+    var result=(dir==='CALL'&&exitPrice>entry)||(dir==='PUT'&&exitPrice<entry)?'win':'loss';
+
+    // Handle dead-flat (spread noise < 0.5 pip on forex)
+    var minMove=entry>100?0.05:0.00005;
+    if(Math.abs(priceDiff)<minMove){
+      showToast('📊 Price barely moved ('+pipsDisplay+'). Logging as LOSS (tie = loss in binary).','info',5000);
+      result='loss';
+    }
+
+    // Auto-log
+    logR(result);
+
+    var arrow=priceDiff>0?'▲ +':priceDiff===0?'→ ':' ▼ ';
+    var msg=result==='win'
+      ?'✅ AUTO WIN — '+dir+' on '+last.asset+'<br>Entry: '+entry.toFixed(entry>100?2:5)+' → Exit: '+exitPrice.toFixed(exitPrice>100?2:5)+' ('+arrow+pipsDisplay+')'
+      :'❌ AUTO LOSS — '+dir+' on '+last.asset+'<br>Entry: '+entry.toFixed(entry>100?2:5)+' → Exit: '+exitPrice.toFixed(exitPrice>100?2:5)+' ('+arrow+pipsDisplay+')';
+    showToast(msg,result,6000);
+
+    if(lbl)lbl.textContent='RESULT: '+(result==='win'?'WIN ✅':'LOSS ❌');
+    if(d){d.textContent=result==='win'?'WIN':'LOSS';d.style.color=result==='win'?'#00ff9d':'#ff2d55';}
+  }).catch(function(){
+    showToast('⚠️ Could not fetch exit price — tap WIN/LOSS manually','info',5000);
+  });
 }
 
 function updateTimerDisplay(){
