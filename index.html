@@ -582,11 +582,6 @@ function gen(){
           (data.candleCount||'?')+' candles • '+src+' • '+assetKey().toUpperCase();
         id('dataStatus').style.color='#00ff9d';
 
-        if(dir==='WAIT'){
-          showBlocked('🛡 BACKEND: '+(s.reason||'No edge detected — waiting for cleaner setup'));
-          btn.textContent='⚡ GENERATE';return;
-        }
-
         var d={asset:gV('asset'),expiry:parseInt(gV('exp'))||5,stake:data.positionSize||gN('stake')};
         var ind=s.indicators||{};
         var agree=s.agree||0;
@@ -600,7 +595,8 @@ function gen(){
           {n:'BOLLINGER',icon:'📊',res:{dir:sc.boll>0.1?'CALL':sc.boll<-0.1?'PUT':'WAIT',c:Math.round(60+Math.abs(sc.boll||0)*35),r:'BB '+Math.round((ind.bbPct||0.5)*100)+'%',used:['boll']},w:1.0}
         ];
 
-        var reason='🛡 LIVE: '+s.reason+' • Pos size $'+(data.positionSize||0).toFixed(2)+
+        var patternStr=Array.isArray(data.strategy.patterns)&&data.strategy.patterns.length?' 📐 '+data.strategy.patterns.join(', '):'';
+        var reason='🛡 LIVE: '+s.reason+patternStr+' • $'+(data.positionSize||0).toFixed(2)+
           (data.riskLevel?' • '+data.riskLevel:'');
         showSig(dir,conf,d,reason,fakeStrats);
 

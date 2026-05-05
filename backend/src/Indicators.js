@@ -130,4 +130,105 @@ function multiTimeframeScore(candles) {
   return dir5 === dir15 ? 0.7 * dir5 : -0.3 * dir5;
 }
 
-module.exports = { rsi, ema, macd, bollingerBands, atr, stochastic, trendStrength, volumeProfile, volatilityScore, multiTimeframeScore };
+// ── Candlestick pattern recognition ───────────────
+function candlePatterns(candles) {
+  if (candles.length < 3) return { score: 0, patterns: [] };
+
+  const body  = c => Math.abs(c.c - c.o);
+  const range = c => c.h - c.l || 0.000001;
+  const upper = c => c.h - Math.max(c.o, c.c);
+  const lower = c => Math.min(c.o, c.c) - c.l;
+  const green = c => c.c >= c.o;
+  const red   = c => c.c <  c.o;
+
+  const last  = candles[candles.length - 1];
+  const prev  = candles[candles.length - 2];
+  const prev2 = candles[candles.length - 3];
+
+  const patterns = [];
+  let score = 0;
+
+  // Bullish Engulfing
+  if (red(prev) && green(last) && last.o <= prev.c && last.c >= prev.o) {
+    score += 1.0; patterns.push('Bullish Engulfing');
+  }
+  // Bearish Engulfing
+  if (green(prev) && red(last) && last.o >= prev.c && last.c <= prev.o) {
+    score -= 1.0; patterns.push('Bearish Engulfing');
+  }
+  // Hammer
+  const lb = body(last), lr = range(last), ll = lower(last), lu = upper(last);
+  if (lb < lr * 0.35 && ll >= lb * 2 && lu < lb * 0.8) {
+    score += 0.8; patterns.push('Hammer');
+  }
+  // Shooting Star
+  if (lb < lr * 0.35 && lu >= lb * 2 && ll < lb * 0.8) {
+    score -= 0.8; patterns.push('Shooting Star');
+  }
+  // Doji — uncertainty, halve the running score
+  if (lb < lr * 0.08) {
+    score *= 0.5; patterns.push('Doji');
+  }
+  // Morning Star
+  if (red(prev2) && body(prev2) > range(prev2) * 0.5 &&
+      body(prev) < range(prev) * 0.3 &&
+      green(last) && body(last) > range(last) * 0.5 &&
+      last.c > (prev2.o + prev2.c) / 2) {
+    score += 0.9; patterns.push('Morning Star');
+  }
+  // Evening Star
+  if (green(prev2) && body(prev2) > range(prev2) * 0.5 &&
+      body(prev) < range(prev) * 0.3 &&
+      red(last) && body(last) > range(last) * 0.5 &&
+      last.c < (prev2.o + prev2.c) / 2) {
+    score -= 0.9; patterns.push('Evening Star');
+  }
+  // Three White Soldiers
+  if (green(prev2) && green(prev) && green(last) &&
+      last.c > prev.c && prev.c > prev2.c) {
+    score += 0.8; patterns.push('3 White Soldiers');
+  }
+  // Three Black Crows
+  if (red(prev2) && red(prev) && red(last) &&
+      last.c < prev.c && prev.c < prev2.c) {
+    score -= 0.8; patterns.push('3 Black Crows');
+  }
+  // Pin Bar
+  const maxWick = Math.max(ll, lu);
+  if (lb < lr * 0.25 && maxWick > lr * 0.6) {
+    if (ll > lu) { score += 0.6; patterns.push('Pin Bar ↑'); }
+    else          { score -= 0.6; patterns.push('Pin Bar ↓'); }
+  }
+
+  return { score: Math.max(-1.5, Math.min(1.5, score)), patterns };
+}
+
+// ── Historical pattern match ───────────────────────
+// Looks back through candle history for the same up/down fingerprint
+// and returns a bullish/bearish bias based on what followed those matches.
+function historicalPatternMatch(candles, lookback = 5, depth = 150) {
+  if (candles.length < lookback + 10) return 0;
+  const recent = candles.slice(-lookback);
+  const sig = recent.map(c => c.c >= c.o ? 1 : -1);
+  const history = candles.slice(0, -(lookback));
+  let bull = 0, bear = 0;
+  for (let i = 0; i <= history.length - lookback - 1; i++) {
+    const w = history.slice(i, i + lookback);
+    const matches = w.filter((c, j) => (c.c >= c.o ? 1 : -1) === sig[j]).length;
+    if (matches >= lookback - 1) {
+      const next = history[i + lookback];
+      if (!next) continue;
+      next.c >= next.o ? bull++ : bear++;
+    }
+  }
+  const total = bull + bear;
+  if (total < 4) return 0;
+  const rate = bull / total;
+  if (rate >= 0.72) return  0.6;
+  if (rate >= 0.62) return  0.3;
+  if (rate <= 0.28) return -0.6;
+  if (rate <= 0.38) return -0.3;
+  return 0;
+}
+
+module.exports = { rsi, ema, macd, bollingerBands, atr, stochastic, trendStrength, volumeProfile, volatilityScore, multiTimeframeScore, candlePatterns, historicalPatternMatch };

@@ -37,6 +37,10 @@ class SignalEngine {
     const bbScore    = this._scoreBB(bb);
     const trendScore = this._scoreTrend(trend);
 
+    // ── Pattern recognition ──
+    const patternData = I.candlePatterns(candles5m);
+    const histScore   = I.historicalPatternMatch(candles5m);
+
     // ── Composite score ──
     let score = 0;
     score += W.rsi   * rsiScore;
@@ -46,41 +50,41 @@ class SignalEngine {
     score += 1.1  * volScore;
     score += 1.3  * vol.score;
     score += 1.2  * mtfScore;
+    score += 1.0  * patternData.score;
+    score += 0.8  * histScore;
 
-    // ── Decision ──
+    // ── Decision — always resolve to CALL or PUT ──
     const callVotes = [rsiScore, macdScore, bbScore, trendScore].filter(s => s > 0.1).length;
     const putVotes  = [rsiScore, macdScore, bbScore, trendScore].filter(s => s < -0.1).length;
 
     let signal, confidence;
-    if (score > threshold) {
-      signal = 'CALL'; confidence = this._normalize(score);
-    } else if (score < -threshold) {
-      signal = 'PUT';  confidence = this._normalize(score);
-    } else if (callVotes >= 3) {
-      signal = 'CALL'; confidence = Math.max(62, this._normalize(Math.abs(score) + 0.3));
-    } else if (putVotes >= 3) {
-      signal = 'PUT';  confidence = Math.max(62, this._normalize(Math.abs(score) + 0.3));
+    if (score > threshold || callVotes >= 3) {
+      signal = 'CALL'; confidence = this._normalize(Math.abs(score));
+    } else if (score < -threshold || putVotes >= 3) {
+      signal = 'PUT';  confidence = this._normalize(Math.abs(score));
     } else {
-      signal = 'WAIT'; confidence = 0;
+      // Weak signal — still commit to a direction, lower confidence
+      signal = score >= 0 ? 'CALL' : 'PUT';
+      confidence = Math.max(52, this._normalize(Math.abs(score) + 0.15));
     }
 
-    confidence = Math.max(50, Math.min(97, confidence || 0));
+    confidence = Math.max(51, Math.min(97, confidence));
 
     // ── Human-readable reason ──
     const parts = [];
-    if (Math.abs(rsiScore) > 0.3)  parts.push(`RSI ${rsiVal.toFixed(0)} ${rsiScore > 0 ? 'oversold' : 'overbought'}`);
+    if (Math.abs(rsiScore) > 0.3)   parts.push(`RSI ${rsiVal.toFixed(0)} ${rsiScore > 0 ? 'oversold' : 'overbought'}`);
     if (Math.abs(macdScore) >= 0.9) parts.push(macdScore > 0 ? 'MACD bull cross' : 'MACD bear cross');
     else if (Math.abs(macdScore) > 0.5) parts.push(macdScore > 0 ? 'MACD rising' : 'MACD falling');
-    if (Math.abs(bbScore) > 0.3)   parts.push(bbScore > 0 ? 'BB lower touch' : 'BB upper touch');
-    if (trend !== 'mixed')         parts.push(trend.replace(/_/g, ' '));
+    if (Math.abs(bbScore) > 0.3)    parts.push(bbScore > 0 ? 'BB lower touch' : 'BB upper touch');
+    if (trend !== 'mixed')          parts.push(trend.replace(/_/g, ' '));
     if (mtfScore >= 0.5)            parts.push('MTF ↑ aligned');
     else if (mtfScore <= -0.5)      parts.push('MTF ↓ aligned');
-    if (vol.score > 0.5)           parts.push('volume spike');
-    if (volScore < -0.3)           parts.push('⚠ low volatility');
-    if (signal === 'WAIT')         parts.push(`score ${score.toFixed(2)} below threshold`);
+    if (vol.score > 0.5)            parts.push('volume spike');
+    if (volScore < -0.3)            parts.push('⚠ low volatility');
+    if (patternData.patterns.length) parts.push(patternData.patterns.join(', '));
+    if (histScore !== 0)            parts.push(`hist ${histScore > 0 ? '▲' : '▼'} ${Math.round(Math.abs(histScore) * 100)}%`);
 
-    // Determine how many core indicators agree with signal
-    const agree = signal === 'CALL' ? callVotes : signal === 'PUT' ? putVotes : 0;
+    const agree = signal === 'CALL' ? callVotes : putVotes;
 
     return {
       signal,
@@ -106,7 +110,8 @@ class SignalEngine {
         volumeScore: vol.score,
         price:       closes[closes.length - 1],
       },
-      scores: { rsi: rsiScore, macd: macdScore, boll: bbScore, trend: trendScore, mtf: mtfScore, vol: volScore, volume: vol.score },
+      scores: { rsi: rsiScore, macd: macdScore, boll: bbScore, trend: trendScore, mtf: mtfScore, vol: volScore, volume: vol.score, pattern: patternData.score, hist: histScore },
+      patterns: patternData.patterns,
     };
   }
 
