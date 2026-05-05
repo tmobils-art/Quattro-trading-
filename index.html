@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QUATTRO AI">
+<meta name="theme-color" content="#00d9ff">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
 <title>QUATTRO AI v14</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
@@ -908,6 +913,11 @@ function resetTimer(){
   id('timerBox').style.display='none';
   var d=id('timerDisplay');if(d){d.textContent='00:00';d.style.color='#00d9ff';}
   var b=id('timerBar');if(b)b.style.width='100%';
+}
+
+// ── PWA service worker ────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
 }
 
 // ── Init ───────────────────────────────────────────

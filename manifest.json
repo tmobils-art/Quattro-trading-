@@ -1,0 +1,25 @@
+{
+  "name": "QUATTRO AI v14",
+  "short_name": "QUATTRO AI",
+  "description": "4-Strategy Fusion Trading Signal Engine",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#05080f",
+  "theme_color": "#00d9ff",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "utilities"]
+}
