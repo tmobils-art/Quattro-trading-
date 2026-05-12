@@ -1,8 +1,8 @@
 {
-  "name": "QUATTRO AI v14",
-  "short_name": "QUATTRO AI",
-  "description": "4-Strategy Fusion Trading Signal Engine",
-  "start_url": "/index.html",
+  "name": "QUATTRO AI + SPORTS",
+  "short_name": "QUATTRO",
+  "description": "4-Strategy Trading Signals & AI Sports Betting Picks Analyst",
+  "start_url": "/sports.html",
   "display": "standalone",
   "background_color": "#05080f",
   "theme_color": "#00d9ff",
@@ -21,5 +21,19 @@
       "purpose": "any maskable"
     }
   ],
-  "categories": ["finance", "utilities"]
+  "shortcuts": [
+    {
+      "name": "Sports Picks",
+      "short_name": "Sports",
+      "description": "Today's AI Sports Betting Picks",
+      "url": "/sports.html"
+    },
+    {
+      "name": "Trading Signals",
+      "short_name": "Trading",
+      "description": "4-Strategy Fusion Trading Signals",
+      "url": "/index.html"
+    }
+  ],
+  "categories": ["finance", "utilities", "sports"]
 }

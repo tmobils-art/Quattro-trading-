@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Q·SPORTS">
+<meta name="theme-color" content="#00d9ff">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<title>QUATTRO SPORTS — AI Picks Analyst</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0;padding:0}
+body{background:#05080f;color:#e8ecf5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh;padding-bottom:72px;-webkit-font-smoothing:antialiased}
+
+/* ── Loading Screen ── */
+.load{position:fixed;inset:0;background:#05080f;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+.load.off{opacity:0;pointer-events:none}
+.load-title{font-size:42px;font-weight:900;letter-spacing:6px;color:#00d9ff;text-shadow:0 0 40px rgba(0,217,255,.5);margin-bottom:4px}
+.load-sub{font-size:10px;color:#00ff9d;letter-spacing:4px;margin-bottom:40px}
+.load-ring{width:90px;height:90px;border-radius:50%;border:3px solid rgba(0,217,255,.12);border-top-color:#00d9ff;border-right-color:#00ff9d;animation:spin 1s linear infinite;margin-bottom:20px}
+.load-pct{font-size:28px;font-weight:900;color:#00ff9d;font-family:'SF Mono',monospace}
+.load-msg{font-size:10px;color:#5a6b85;letter-spacing:2px;margin-top:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Header ── */
+.hdr{background:linear-gradient(180deg,#08101f 0%,#05080f 100%);border-bottom:1px solid #1a2336;padding:12px 16px 8px;position:sticky;top:0;z-index:50}
+.hdr-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.logo-row{display:flex;align-items:center;gap:10px}
+.logo-pill{background:linear-gradient(135deg,#00ff9d,#00d9ff);border-radius:10px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.logo-text{font-size:16px;font-weight:900;letter-spacing:3px;color:#e8ecf5}
+.logo-tag{font-size:9px;color:#5a6b85;letter-spacing:2px;margin-top:1px}
+.hdr-date{text-align:right}
+.hdr-date-str{font-size:10px;color:#8595b0;letter-spacing:.5px}
+.hdr-record{font-size:13px;font-weight:900;color:#00ff9d;letter-spacing:1px}
+
+/* ── Stats Strip ── */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.sbox{background:#0d1425;border:1px solid #1a2336;border-radius:8px;padding:7px 4px;text-align:center}
+.sbox-val{font-size:15px;font-weight:900;font-family:'SF Mono',monospace;line-height:1;color:#00d9ff}
+.sbox-lbl{font-size:8px;color:#5a6b85;letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+.sbox.g .sbox-val{color:#00ff9d}
+.sbox.y .sbox-val{color:#f5b93a}
+.sbox.r .sbox-val{color:#ff2d55}
+
+/* ── Sport Filter ── */
+.sport-scroll{overflow-x:auto;display:flex;gap:6px;padding:10px 16px 0;scrollbar-width:none}
+.sport-scroll::-webkit-scrollbar{display:none}
+.sp-chip{background:#0d1425;border:1px solid #1a2336;border-radius:20px;padding:7px 14px;font-size:11px;font-weight:700;color:#5a6b85;white-space:nowrap;cursor:pointer;letter-spacing:1px;flex-shrink:0;transition:all .15s;user-select:none}
+.sp-chip.on{background:rgba(0,217,255,.1);border-color:#00d9ff;color:#00d9ff}
+
+/* ── Category Tabs ── */
+.cat-tabs{display:flex;border-bottom:1px solid #1a2336;margin-top:10px;overflow-x:auto;scrollbar-width:none}
+.cat-tabs::-webkit-scrollbar{display:none}
+.cat-tab{flex:1;padding:9px 6px;text-align:center;font-size:10px;font-weight:900;letter-spacing:.8px;color:#5a6b85;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;position:relative;white-space:nowrap;min-width:70px}
+.cat-tab .tab-count{background:#1a2336;color:#8595b0;font-size:8px;font-weight:900;padding:1px 5px;border-radius:10px;margin-left:4px;vertical-align:middle}
+.cat-tab.on.t-sure{color:#00ff9d;border-bottom-color:#00ff9d}
+.cat-tab.on.t-sure .tab-count{background:rgba(0,255,157,.15);color:#00ff9d}
+.cat-tab.on.t-place{color:#00d9ff;border-bottom-color:#00d9ff}
+.cat-tab.on.t-place .tab-count{background:rgba(0,217,255,.15);color:#00d9ff}
+.cat-tab.on.t-lotto{color:#f5b93a;border-bottom-color:#f5b93a}
+.cat-tab.on.t-lotto .tab-count{background:rgba(245,185,58,.15);color:#f5b93a}
+.cat-tab.on.t-build{color:#b985ff;border-bottom-color:#b985ff}
+
+/* ── Page Container ── */
+.pg{display:none}
+.pg.on{display:block}
+.pg-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
+
+/* ── Pick Card ── */
+.picks-wrap{padding:10px 14px 16px}
+.pick-card{background:#0a0f1c;border:1px solid #1a2336;border-radius:14px;margin-bottom:12px;overflow:hidden;transition:border-color .15s,transform .1s}
+.pick-card:active{transform:scale(.995)}
+.pick-card.sure-card{border-left:3px solid rgba(0,255,157,.4)}
+.pick-card.place-card{border-left:3px solid rgba(0,217,255,.4)}
+
+/* Card Header */
+.c-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 12px 7px;border-bottom:1px solid rgba(255,255,255,.04);flex-wrap:wrap;gap:6px}
+.sport-badge{padding:3px 8px;border-radius:5px;font-size:9px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase}
+.sport-badge.NBA{background:rgba(30,120,255,.18);color:#6baeff}
+.sport-badge.MLB{background:rgba(255,65,65,.12);color:#ff7a7a}
+.sport-badge.NHL{background:rgba(0,180,255,.12);color:#00d9ff}
+.sport-badge.SOCCER{background:rgba(0,255,157,.12);color:#00ff9d}
+.sport-badge.MMA{background:rgba(255,140,0,.12);color:#ff9f3c}
+.sport-badge.TENNIS{background:rgba(180,133,255,.12);color:#c49bff}
+.sport-badge.NFL{background:rgba(245,185,58,.12);color:#f5c842}
+.sport-badge.GOLF{background:rgba(0,210,100,.12);color:#00d264}
+.league-lbl{font-size:9px;color:#5a6b85;letter-spacing:.3px;flex:1;margin:0 6px}
+.c-time{font-size:10px;color:#8595b0;font-family:'SF Mono',monospace;white-space:nowrap}
+.c-cat-badge{padding:3px 9px;border-radius:20px;font-size:9px;font-weight:900;letter-spacing:.5px;white-space:nowrap}
+.c-cat-badge.sure{background:rgba(0,255,157,.1);color:#00ff9d;border:1px solid rgba(0,255,157,.2)}
+.c-cat-badge.place{background:rgba(0,217,255,.1);color:#00d9ff;border:1px solid rgba(0,217,255,.2)}
+
+/* Matchup */
+.c-matchup{padding:12px 12px 10px}
+.teams-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.team-blk{flex:1;text-align:center;min-width:0}
+.team-logo{font-size:24px;line-height:1;margin-bottom:3px}
+.team-name{font-size:12px;font-weight:800;color:#e8ecf5;line-height:1.2;word-wrap:break-word}
+.team-rec{font-size:10px;color:#5a6b85;margin-top:2px}
+.vs-blk{color:#3a4b63;font-size:10px;font-weight:700;letter-spacing:1px;padding:0 4px;flex-shrink:0}
+
+/* Pick Box */
+.pick-box{background:#05080f;border:1px solid #1a2336;border-radius:10px;padding:11px 13px}
+.pick-box-lbl{font-size:8px;color:#5a6b85;letter-spacing:2px;text-transform:uppercase;margin-bottom:5px}
+.pick-line{font-size:15px;font-weight:900;color:#e8ecf5;margin-bottom:7px;letter-spacing:.3px}
+.pick-meta{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pick-type-badge{font-size:10px;color:#8595b0;background:#0a0f1c;padding:3px 8px;border-radius:5px;border:1px solid #1a2336}
+.odds-col{text-align:right}
+.odds-val{font-size:20px;font-weight:900;font-family:'SF Mono',monospace;line-height:1}
+.odds-val.fav{color:#00ff9d}
+.odds-val.dog{color:#f5b93a}
+.odds-implied{font-size:9px;color:#5a6b85;letter-spacing:.5px;margin-top:1px}
+
+/* Confidence */
+.conf-row{display:flex;align-items:center;gap:10px;padding:9px 12px 0}
+.conf-lbl{font-size:9px;color:#5a6b85;letter-spacing:1px;white-space:nowrap;text-transform:uppercase}
+.conf-track{flex:1;height:5px;background:#1a2336;border-radius:3px;overflow:hidden}
+.conf-fill{height:100%;border-radius:3px}
+.conf-fill.sure{background:linear-gradient(90deg,#00c06e,#00ff9d)}
+.conf-fill.place{background:linear-gradient(90deg,#0085a8,#00d9ff)}
+.conf-pct{font-size:13px;font-weight:900;font-family:'SF Mono',monospace;min-width:36px;text-align:right}
+.conf-pct.sure{color:#00ff9d}
+.conf-pct.place{color:#00d9ff}
+
+/* Analysis */
+.c-analysis{padding:9px 12px 4px;font-size:11.5px;color:#8595b0;line-height:1.65;border-top:1px solid rgba(255,255,255,.04);margin-top:8px}
+.c-analysis strong{color:#c8d5e8}
+
+/* Stats Row */
+.pick-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding:8px 12px 10px}
+.pstat{background:#05080f;border:1px solid #1a2336;border-radius:8px;padding:7px 5px;text-align:center}
+.pstat-val{font-size:11px;font-weight:900;color:#00d9ff;font-family:'SF Mono',monospace;line-height:1;margin-bottom:3px}
+.pstat-lbl{font-size:8px;color:#5a6b85;letter-spacing:.3px;line-height:1.3}
+
+/* Action Buttons */
+.c-actions{display:flex;gap:6px;padding:8px 12px 11px;border-top:1px solid rgba(255,255,255,.04)}
+.c-btn{flex:1;padding:9px 4px;border-radius:8px;border:1px solid #1a2336;background:transparent;color:#5a6b85;font-size:10px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:4px;transition:all .15s;letter-spacing:.3px}
+.c-btn:active{transform:scale(.96)}
+.c-btn.saved{border-color:#00ff9d;color:#00ff9d;background:rgba(0,255,157,.07)}
+.c-btn.in-parlay{border-color:#b985ff;color:#b985ff;background:rgba(185,133,255,.07)}
+.c-btn.pikkit{background:linear-gradient(135deg,#6b3fff,#b985ff);border-color:transparent;color:#fff;font-weight:900}
+.c-btn.pikkit:active{opacity:.82}
+
+/* ── Lotto Card ── */
+.lotto-card{background:linear-gradient(160deg,#0d0e1c,#0a0f1c);border:1px solid rgba(245,185,58,.22);border-radius:14px;margin-bottom:12px;overflow:hidden}
+.lotto-top{background:linear-gradient(135deg,rgba(245,185,58,.07),rgba(185,133,255,.07));padding:14px 14px 12px;border-bottom:1px solid rgba(245,185,58,.1)}
+.lotto-head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.lotto-icon-big{font-size:24px;flex-shrink:0;margin-top:2px}
+.lotto-title{font-size:14px;font-weight:900;color:#f5b93a;letter-spacing:.3px;margin-bottom:3px}
+.lotto-return-tag{font-size:10px;color:#b985ff;font-weight:700}
+.lotto-leg-count{font-size:9px;color:#5a6b85;margin-top:4px;letter-spacing:.5px}
+.lotto-odds-col{text-align:right;flex-shrink:0}
+.lotto-odds-big{font-size:26px;font-weight:900;color:#f5b93a;font-family:'SF Mono',monospace;line-height:1}
+.lotto-odds-sub{font-size:9px;color:#8595b0;letter-spacing:1px;margin-bottom:3px}
+.lotto-prob{font-size:10px;color:#5a6b85;letter-spacing:.3px}
+
+/* Legs */
+.legs-list{padding:10px 14px}
+.leg-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.leg-row:last-child{border-bottom:0}
+.leg-num{width:18px;height:18px;border-radius:50%;background:rgba(245,185,58,.15);color:#f5b93a;font-size:9px;font-weight:900;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.leg-sport-badge{font-size:8px;font-weight:900;color:#5a6b85;width:38px;letter-spacing:.5px;flex-shrink:0}
+.leg-pick-txt{flex:1;font-size:11.5px;font-weight:700;color:#e8ecf5;min-width:0}
+.leg-odds-txt{font-size:11px;font-weight:900;font-family:'SF Mono',monospace;flex-shrink:0}
+.leg-odds-txt.fav{color:#00ff9d}
+.leg-odds-txt.dog{color:#f5b93a}
+.leg-conf-dot{width:24px;text-align:center;font-size:9px;color:#5a6b85;flex-shrink:0}
+
+.lotto-analysis{padding:2px 14px 10px;font-size:11px;color:#8595b0;line-height:1.65}
+.lotto-actions{display:flex;gap:8px;padding:8px 14px 12px;border-top:1px solid rgba(255,255,255,.04)}
+
+/* ── Parlay Builder ── */
+.parlay-wrap{padding:14px 14px 20px}
+.pb-header{margin-bottom:14px}
+.pb-title{font-size:18px;font-weight:900;color:#e8ecf5;margin-bottom:3px}
+.pb-subtitle{font-size:11px;color:#5a6b85}
+.pb-empty{text-align:center;padding:36px 20px;background:#0a0f1c;border:2px dashed #1a2336;border-radius:14px;margin-bottom:14px}
+.pb-empty-icon{font-size:40px;margin-bottom:10px}
+.pb-empty-msg{font-size:13px;font-weight:700;color:#8595b0;margin-bottom:5px}
+.pb-empty-sub{font-size:11px;color:#5a6b85;line-height:1.5}
+
+.pb-leg-card{display:flex;align-items:center;gap:10px;background:#0a0f1c;border:1px solid #1a2336;border-radius:10px;padding:11px 12px;margin-bottom:7px}
+.pb-leg-sport{font-size:9px;font-weight:900;color:#5a6b85;width:36px;letter-spacing:.5px;flex-shrink:0}
+.pb-leg-pick{flex:1;font-size:12px;font-weight:700;color:#e8ecf5;min-width:0}
+.pb-leg-odds{font-size:13px;font-weight:900;font-family:'SF Mono',monospace;color:#f5b93a;flex-shrink:0}
+.pb-leg-rm{background:transparent;border:none;color:#ff2d55;font-size:18px;cursor:pointer;padding:2px 0 2px 6px;line-height:1;flex-shrink:0}
+
+.pb-totals{background:linear-gradient(135deg,rgba(245,185,58,.07),rgba(185,133,255,.07));border:1px solid rgba(245,185,58,.2);border-radius:12px;padding:14px;margin-bottom:12px}
+.pb-total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pb-total-row:last-child{margin-bottom:0;border-top:1px solid rgba(255,255,255,.06);padding-top:8px}
+.pb-total-lbl{font-size:12px;color:#8595b0}
+.pb-total-val{font-size:14px;font-weight:900;font-family:'SF Mono',monospace;color:#f5b93a}
+.pb-total-val.big{font-size:20px;color:#b985ff}
+
+.pb-stake-row{margin-bottom:12px}
+.pb-stake-lbl{font-size:9px;color:#5a6b85;letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px}
+.pb-stake-input{width:100%;background:#05080f;border:2px solid #1a2336;color:#e8ecf5;padding:13px;border-radius:10px;font-size:22px;font-weight:900;font-family:inherit;text-align:center;transition:border-color .15s}
+.pb-stake-input:focus{outline:none;border-color:#f5b93a}
+
+.pb-place-btn{width:100%;padding:17px;background:linear-gradient(135deg,#f5b93a,#ff8c00);color:#05080f;border:none;border-radius:12px;font-size:15px;font-weight:900;letter-spacing:2px;cursor:pointer;font-family:inherit;box-shadow:0 6px 24px rgba(245,185,58,.22)}
+.pb-place-btn:active{transform:scale(.98)}
+.pb-place-btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ── Stats Page ── */
+.stats-wrap{padding:14px}
+.section-title{font-size:11px;font-weight:900;color:#00d9ff;letter-spacing:2px;text-transform:uppercase;margin-bottom:12px;margin-top:16px}
+.section-title:first-child{margin-top:0}
+.perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.perf-box{background:#0a0f1c;border:1px solid #1a2336;border-radius:12px;padding:14px;text-align:center}
+.perf-val{font-size:28px;font-weight:900;font-family:'SF Mono',monospace;line-height:1;margin-bottom:5px}
+.perf-lbl{font-size:10px;color:#5a6b85;letter-spacing:1px;text-transform:uppercase}
+.perf-sub{font-size:10px;margin-top:4px}
+.perf-val.g{color:#00ff9d}
+.perf-val.c{color:#00d9ff}
+.perf-val.y{color:#f5b93a}
+.perf-val.r{color:#ff2d55}
+
+.chart-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.chart-lbl{font-size:11px;color:#8595b0;width:80px;text-align:right;flex-shrink:0;letter-spacing:.3px}
+.chart-bar{flex:1;height:22px;background:#1a2336;border-radius:5px;overflow:hidden;position:relative}
+.chart-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding-left:10px;font-size:10px;font-weight:900;color:rgba(5,8,15,.9);transition:width .7s cubic-bezier(.4,0,.2,1)}
+.chart-fill.sure{background:linear-gradient(90deg,#00c06e,#00ff9d)}
+.chart-fill.place{background:linear-gradient(90deg,#0085a8,#00d9ff)}
+.chart-fill.lotto{background:linear-gradient(90deg,#c89000,#f5b93a)}
+.chart-pct{font-size:11px;font-weight:900;font-family:'SF Mono',monospace;width:34px;text-align:right;flex-shrink:0}
+.chart-pct.sure{color:#00ff9d}
+.chart-pct.place{color:#00d9ff}
+.chart-pct.lotto{color:#f5b93a}
+
+.sport-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.sport-row:last-child{border-bottom:0}
+.sport-row-left{display:flex;align-items:center;gap:10px}
+.sport-row-icon{font-size:18px}
+.sport-row-name{font-size:13px;font-weight:700;color:#e8ecf5}
+.sport-row-rec{font-size:10px;color:#5a6b85;margin-top:2px}
+.sport-row-right{text-align:right}
+.sport-row-roi{font-size:14px;font-weight:900;color:#00ff9d;font-family:'SF Mono',monospace}
+.sport-row-roi.neg{color:#ff2d55}
+.sport-win-rate{font-size:10px;color:#5a6b85;margin-top:2px}
+
+/* ── Bottom Nav ── */
+.bnav{display:flex;background:#0a0f1c;border-top:1px solid #1a2336;position:fixed;bottom:0;left:0;right:0;z-index:40}
+.bnav-btn{flex:1;background:transparent;border:none;padding:9px 4px 11px;color:#5a6b85;font-size:9px;font-weight:700;letter-spacing:.8px;cursor:pointer;font-family:inherit;position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;transition:color .15s}
+.bnav-icon{font-size:20px;line-height:1}
+.bnav-btn.on{color:#00d9ff}
+.bnav-btn.on::after{content:'';position:absolute;top:0;left:20%;right:20%;height:2px;background:linear-gradient(90deg,#00d9ff,#00ff9d);border-radius:0 0 3px 3px}
+.bnav-btn.on.t-sure{color:#00ff9d}
+.bnav-btn.on.t-sure::after{background:linear-gradient(90deg,#00ff9d,#00d9ff)}
+.bnav-btn.on.t-lotto{color:#f5b93a}
+.bnav-btn.on.t-lotto::after{background:linear-gradient(90deg,#f5b93a,#b985ff)}
+.bnav-badge{position:absolute;top:6px;right:calc(50% - 18px);background:#ff2d55;color:#fff;font-size:8px;font-weight:900;min-width:14px;height:14px;padding:0 3px;border-radius:7px;display:flex;align-items:center;justify-content:center}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(16px);background:#0a0f1c;border:1px solid rgba(0,217,255,.4);border-radius:12px;padding:11px 18px;font-size:12px;font-weight:700;color:#00d9ff;opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:300;letter-spacing:.3px;box-shadow:0 4px 20px rgba(0,0,0,.6)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:rgba(0,255,157,.4);color:#00ff9d}
+.toast.warn{border-color:rgba(245,185,58,.4);color:#f5b93a}
+
+/* ── Pikkit Sheet ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:flex-end;backdrop-filter:blur(3px)}
+.overlay.show{display:flex}
+.sheet{background:#0d1120;border-radius:22px 22px 0 0;padding:20px 18px 30px;width:100%;border-top:1px solid #1a2336;max-height:90vh;overflow-y:auto}
+.sheet-handle{width:36px;height:4px;background:#1a2336;border-radius:2px;margin:0 auto 18px}
+.sheet-title{font-size:17px;font-weight:900;color:#e8ecf5;text-align:center;margin-bottom:6px}
+.sheet-sub{font-size:12px;color:#8595b0;text-align:center;line-height:1.55;margin-bottom:16px}
+.pick-preview{background:#05080f;border:1px solid #1a2336;border-radius:10px;padding:13px;margin-bottom:16px;font-size:12px;color:#e8ecf5;line-height:1.8;font-family:'SF Mono',monospace;word-break:break-word}
+.pick-preview strong{color:#00ff9d}
+.sheet-btns{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.sheet-btn{padding:14px;border-radius:12px;border:none;font-size:13px;font-weight:900;cursor:pointer;font-family:inherit;letter-spacing:.5px;transition:opacity .15s}
+.sheet-btn:active{opacity:.8}
+.sheet-btn.cancel{background:#1a2336;color:#8595b0}
+.sheet-btn.open-pikkit{background:linear-gradient(135deg,#6b3fff,#c49bff);color:#fff;box-shadow:0 4px 16px rgba(107,63,255,.3)}
+
+/* ── Disclaimer ── */
+.disclaimer{margin:0 14px 14px;padding:10px 13px;background:rgba(255,45,85,.05);border:1px solid rgba(255,45,85,.13);border-radius:9px;font-size:10px;color:#8595b0;line-height:1.6;text-align:center}
+
+/* ── Empty State ── */
+.empty-state{text-align:center;padding:44px 24px}
+.empty-icon{font-size:44px;margin-bottom:12px}
+.empty-msg{font-size:14px;font-weight:700;color:#8595b0;margin-bottom:6px}
+.empty-sub{font-size:12px;color:#5a6b85;line-height:1.5}
+
+/* ── Back button ── */
+.back-pill{display:inline-flex;align-items:center;gap:5px;background:#0a0f1c;border:1px solid #1a2336;border-radius:20px;padding:6px 12px;font-size:11px;font-weight:700;color:#5a6b85;text-decoration:none;letter-spacing:.5px;transition:all .15s}
+.back-pill:active{color:#00d9ff;border-color:#00d9ff}
+</style>
+</head>
+<body>
+
+<!-- Loading Screen -->
+<div class="load" id="loadScreen">
+  <div class="load-title">Q·SPORTS</div>
+  <div class="load-sub">AI PICKS ANALYST</div>
+  <div class="load-ring"></div>
+  <div class="load-pct" id="loadPct">0%</div>
+  <div class="load-msg" id="loadMsg">SCANNING TODAY'S MATCHUPS...</div>
+</div>
+
+<!-- Header -->
+<div class="hdr">
+  <div class="hdr-top">
+    <div class="logo-row">
+      <div class="logo-pill">🏆</div>
+      <div>
+        <div class="logo-text">Q·SPORTS</div>
+        <div class="logo-tag">AI PICKS ANALYST</div>
+      </div>
+    </div>
+    <div class="hdr-date">
+      <div class="hdr-date-str" id="hdrDate"></div>
+      <div class="hdr-record" id="hdrRecord">LIVE PICKS</div>
+    </div>
+  </div>
+  <div class="stats-strip">
+    <div class="sbox g"><div class="sbox-val">67%</div><div class="sbox-lbl">Win Rate</div></div>
+    <div class="sbox"><div class="sbox-val">+24%</div><div class="sbox-lbl">ROI 30d</div></div>
+    <div class="sbox y"><div class="sbox-val">W5</div><div class="sbox-lbl">Streak</div></div>
+    <div class="sbox"><div class="sbox-val" id="totalPicksCount">18</div><div class="sbox-lbl">Today</div></div>
+  </div>
+</div>
+
+<!-- Sport Filter -->
+<div class="sport-scroll" id="sportFilter">
+  <div class="sp-chip on" data-sport="ALL">ALL</div>
+  <div class="sp-chip" data-sport="NBA">🏀 NBA</div>
+  <div class="sp-chip" data-sport="MLB">⚾ MLB</div>
+  <div class="sp-chip" data-sport="NHL">🏒 NHL</div>
+  <div class="sp-chip" data-sport="SOCCER">⚽ SOCCER</div>
+  <div class="sp-chip" data-sport="MMA">🥊 MMA</div>
+  <div class="sp-chip" data-sport="TENNIS">🎾 TENNIS</div>
+  <div class="sp-chip" data-sport="GOLF">⛳ GOLF</div>
+</div>
+
+<!-- Category Tabs -->
+<div class="cat-tabs">
+  <div class="cat-tab t-sure on" data-tab="sure">🛡 SURE BETS<span class="tab-count" id="cnt-sure">7</span></div>
+  <div class="cat-tab t-place" data-tab="place">🎯 PLACE BETS<span class="tab-count" id="cnt-place">6</span></div>
+  <div class="cat-tab t-lotto" data-tab="lotto">🎰 LOTTO<span class="tab-count" id="cnt-lotto">4</span></div>
+  <div class="cat-tab t-build" data-tab="build">⚡ BUILDER</div>
+  <div class="cat-tab t-stats" data-tab="stats">📊 STATS</div>
+</div>
+
+<!-- ═══ SURE BETS PAGE ═══ -->
+<div class="pg on" id="pg-sure">
+  <div class="pg-scroll">
+    <div class="picks-wrap" id="sure-picks"></div>
+    <div class="disclaimer">⚠️ For entertainment & information only. Gamble responsibly. 18+ only. Past performance does not guarantee future results.</div>
+  </div>
+</div>
+
+<!-- ═══ PLACE BETS PAGE ═══ -->
+<div class="pg" id="pg-place">
+  <div class="pg-scroll">
+    <div class="picks-wrap" id="place-picks"></div>
+    <div class="disclaimer">⚠️ For entertainment & information only. Gamble responsibly. 18+ only.</div>
+  </div>
+</div>
+
+<!-- ═══ LOTTO PAGE ═══ -->
+<div class="pg" id="pg-lotto">
+  <div class="pg-scroll">
+    <div id="lotto-note" style="margin:10px 14px 0;padding:10px 13px;background:rgba(245,185,58,.06);border:1px solid rgba(245,185,58,.15);border-radius:9px;font-size:11px;color:#c8a840;line-height:1.6">
+      🎰 <strong>Lotto picks</strong> are high-odds parlays & accumulators. High risk, massive reward. Keep stakes small — these are long-shot lottery tickets built from today's best picks.
+    </div>
+    <div class="picks-wrap" id="lotto-picks"></div>
+    <div class="disclaimer">⚠️ Parlay bets are high risk. Only bet what you can afford to lose. 18+ only.</div>
+  </div>
+</div>
+
+<!-- ═══ PARLAY BUILDER PAGE ═══ -->
+<div class="pg" id="pg-build">
+  <div class="pg-scroll">
+    <div class="parlay-wrap">
+      <div class="pb-header">
+        <div class="pb-title">⚡ Parlay Builder</div>
+        <div class="pb-subtitle">Add picks from Sure Bets or Place Bets tabs · Max 12 legs</div>
+      </div>
+      <div id="pb-legs-container">
+        <div class="pb-empty" id="pb-empty">
+          <div class="pb-empty-icon">🎰</div>
+          <div class="pb-empty-msg">Your parlay is empty</div>
+          <div class="pb-empty-sub">Go to Sure Bets or Place Bets and tap<br><strong style="color:#b985ff">+ PARLAY</strong> on any pick to add it here</div>
+        </div>
+      </div>
+      <div id="pb-totals" style="display:none">
+        <div class="pb-totals">
+          <div class="pb-total-row">
+            <span class="pb-total-lbl">Legs Added</span>
+            <span class="pb-total-val" id="pb-legs-count">0</span>
+          </div>
+          <div class="pb-total-row">
+            <span class="pb-total-lbl">Combined Probability</span>
+            <span class="pb-total-val" id="pb-prob">—</span>
+          </div>
+          <div class="pb-total-row">
+            <span class="pb-total-lbl">Combined Odds</span>
+            <span class="pb-total-val" id="pb-odds">—</span>
+          </div>
+          <div class="pb-total-row">
+            <span class="pb-total-lbl">Estimated Payout</span>
+            <span class="pb-total-val big" id="pb-payout">—</span>
+          </div>
+        </div>
+        <div class="pb-stake-row">
+          <span class="pb-stake-lbl">Your Stake ($)</span>
+          <input type="number" class="pb-stake-input" id="pb-stake" value="10" min="1" max="100000" oninput="updateParlay()">
+        </div>
+        <button class="pb-place-btn" id="pb-place-btn" onclick="placeParlayWithPikkit()">
+          🎯 PLACE WITH PIKKIT
+        </button>
+      </div>
+    </div>
+    <div class="disclaimer">⚠️ Custom parlays carry high risk. Bet responsibly. 18+ only.</div>
+  </div>
+</div>
+
+<!-- ═══ STATS PAGE ═══ -->
+<div class="pg" id="pg-stats">
+  <div class="pg-scroll">
+    <div class="stats-wrap">
+      <div class="section-title">Overall Performance (Last 30 Days)</div>
+      <div class="perf-grid">
+        <div class="perf-box">
+          <div class="perf-val g">67%</div>
+          <div class="perf-lbl">Win Rate</div>
+          <div class="perf-sub" style="color:#00ff9d">+3.2% vs last month</div>
+        </div>
+        <div class="perf-box">
+          <div class="perf-val c">+24%</div>
+          <div class="perf-lbl">ROI</div>
+          <div class="perf-sub" style="color:#8595b0">On 1 unit stakes</div>
+        </div>
+        <div class="perf-box">
+          <div class="perf-val y">142</div>
+          <div class="perf-lbl">Picks Made</div>
+          <div class="perf-sub" style="color:#8595b0">Avg 4.7/day</div>
+        </div>
+        <div class="perf-box">
+          <div class="perf-val g">95-47</div>
+          <div class="perf-lbl">W-L Record</div>
+          <div class="perf-sub" style="color:#8595b0">W5 current streak</div>
+        </div>
+      </div>
+
+      <div class="section-title">Win Rate by Pick Type</div>
+      <div style="background:#0a0f1c;border:1px solid #1a2336;border-radius:12px;padding:14px;margin-bottom:16px">
+        <div class="chart-row">
+          <span class="chart-lbl">Sure Bets</span>
+          <div class="chart-bar"><div class="chart-fill sure" style="width:78%">78%</div></div>
+          <span class="chart-pct sure">78%</span>
+        </div>
+        <div class="chart-row">
+          <span class="chart-lbl">Place Bets</span>
+          <div class="chart-bar"><div class="chart-fill place" style="width:64%">64%</div></div>
+          <span class="chart-pct place">64%</span>
+        </div>
+        <div class="chart-row" style="margin-bottom:0">
+          <span class="chart-lbl">Lotto (Parlays)</span>
+          <div class="chart-bar"><div class="chart-fill lotto" style="width:22%">22%</div></div>
+          <span class="chart-pct lotto">22%</span>
+        </div>
+      </div>
+
+      <div class="section-title">Performance by Sport</div>
+      <div style="background:#0a0f1c;border:1px solid #1a2336;border-radius:12px;padding:14px;margin-bottom:16px">
+        <div class="sport-row">
+          <div class="sport-row-left"><span class="sport-row-icon">🏀</span><div><div class="sport-row-name">NBA</div><div class="sport-row-rec">28W-11L</div></div></div>
+          <div class="sport-row-right"><div class="sport-row-roi">+31%</div><div class="sport-win-rate">72% Win Rate</div></div>
+        </div>
+        <div class="sport-row">
+          <div class="sport-row-left"><span class="sport-row-icon">⚽</span><div><div class="sport-row-name">Soccer</div><div class="sport-row-rec">22W-9L</div></div></div>
+          <div class="sport-row-right"><div class="sport-row-roi">+28%</div><div class="sport-win-rate">71% Win Rate</div></div>
+        </div>
+        <div class="sport-row">
+          <div class="sport-row-left"><span class="sport-row-icon">🥊</span><div><div class="sport-row-name">MMA / UFC</div><div class="sport-row-rec">14W-6L</div></div></div>
+          <div class="sport-row-right"><div class="sport-row-roi">+22%</div><div class="sport-win-rate">70% Win Rate</div></div>
+        </div>
+        <div class="sport-row">
+          <div class="sport-row-left"><span class="sport-row-icon">⚾</span><div><div class="sport-row-name">MLB</div><div class="sport-row-rec">18W-9L</div></div></div>
+          <div class="sport-row-right"><div class="sport-row-roi">+19%</div><div class="sport-win-rate">67% Win Rate</div></div>
+        </div>
+        <div class="sport-row">
+          <div class="sport-row-left"><span class="sport-row-icon">🏒</span><div><div class="sport-row-name">NHL</div><div class="sport-row-rec">9W-5L</div></div></div>
+          <div class="sport-row-right"><div class="sport-row-roi">+14%</div><div class="sport-win-rate">64% Win Rate</div></div>
+        </div>
+        <div class="sport-row">
+          <div class="sport-row-left"><span class="sport-row-icon">🎾</span><div><div class="sport-row-name">Tennis</div><div class="sport-row-rec">4W-7L</div></div></div>
+          <div class="sport-row-right"><div class="sport-row-roi neg">-8%</div><div class="sport-win-rate">36% Win Rate</div></div>
+        </div>
+      </div>
+
+      <div style="text-align:center;padding:10px 0 6px">
+        <a href="index.html" class="back-pill">← Back to Trading App</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="bnav">
+  <button class="bnav-btn t-sure on" data-tab="sure" onclick="switchTab('sure',this)">
+    <span class="bnav-icon">🛡</span>SURE BETS
+    <span class="bnav-badge" id="nb-sure">7</span>
+  </button>
+  <button class="bnav-btn t-place" data-tab="place" onclick="switchTab('place',this)">
+    <span class="bnav-icon">🎯</span>PLACE BETS
+  </button>
+  <button class="bnav-btn t-lotto" data-tab="lotto" onclick="switchTab('lotto',this)">
+    <span class="bnav-icon">🎰</span>LOTTO
+  </button>
+  <button class="bnav-btn t-build" data-tab="build" onclick="switchTab('build',this)">
+    <span class="bnav-icon">⚡</span>PARLAY
+    <span class="bnav-badge" id="nb-build" style="display:none">0</span>
+  </button>
+  <button class="bnav-btn t-stats" data-tab="stats" onclick="switchTab('stats',this)">
+    <span class="bnav-icon">📊</span>STATS
+  </button>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Pikkit Sheet -->
+<div class="overlay" id="pikkitOverlay" onclick="closeSheet(event)">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">🎯 Bet with Pikkit</div>
+    <div class="sheet-sub">Your pick is ready. Copy it and paste into Pikkit to track your bet — or open Pikkit directly.</div>
+    <div class="pick-preview" id="sheetPickContent">—</div>
+    <div class="sheet-btns">
+      <button class="sheet-btn cancel" onclick="document.getElementById('pikkitOverlay').classList.remove('show')">Cancel</button>
+      <button class="sheet-btn open-pikkit" onclick="copyAndOpenPikkit()">📋 Copy &amp; Open Pikkit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ══════════════════════════════════════════
+//  DATA — All Picks (May 12 2026)
+// ══════════════════════════════════════════
+
+const SINGLE_PICKS = [
+
+  // ─── SURE BETS ───────────────────────────────
+
+  {
+    id: 'nba-cel-knk',
+    sport: 'NBA', league: 'NBA Playoffs · ECF R2 Game 3',
+    time: '7:30 PM ET', cat: 'sure',
+    home: { name: 'Boston Celtics', rec: '62-20 · Series Lead 2-0', logo: '🍀' },
+    away: { name: 'New York Knicks', rec: '53-29 · Obj. Fontecilla Q?', logo: '🗽' },
+    pick: 'Boston Celtics −6.5',
+    pickType: 'Point Spread', odds: -110, conf: 88,
+    analysis: 'Celtics are 14-3 ATS as home playoff favorites this season. Knicks leading scorer is questionable (ankle). Boston averaging a +12.3 pt margin at home vs playoff teams. Tatum posted 34+ PPG in his last 4 home games.',
+    stats: [
+      { lbl: 'Home ATS', val: '14-3' },
+      { lbl: 'H2H Last 5', val: 'BOS 4-1' },
+      { lbl: 'Tatum PPG (L4)', val: '34.3' }
+    ]
+  },
+
+  {
+    id: 'soc-rm-psg',
+    sport: 'SOCCER', league: 'UEFA Champions League · SF 2nd Leg',
+    time: '3:00 PM ET', cat: 'sure',
+    home: { name: 'Real Madrid', rec: 'UCL Home: 9-1-0', logo: '👑' },
+    away: { name: 'PSG', rec: 'UCL Away: 5-2-3', logo: '🗼' },
+    pick: 'Real Madrid Win or Draw',
+    pickType: 'Double Chance', odds: -155, conf: 91,
+    analysis: 'Real Madrid are unbeaten at the Bernabéu in UCL — 18-game home streak. PSG\'s European away form is shaky (5W-2D-3L). Madrid lead 1-0 on aggregate. Backing them to hold or extend — elite home fortress.',
+    stats: [
+      { lbl: 'UCL Home Streak', val: 'Unbeaten 18' },
+      { lbl: 'Agg. Score', val: 'MAD 1-0' },
+      { lbl: 'PSG UCL Away', val: '5W-2D-3L' }
+    ]
+  },
+
+  {
+    id: 'soc-ars-chel',
+    sport: 'SOCCER', league: 'Premier League · Matchday 37',
+    time: '9:00 AM ET', cat: 'sure',
+    home: { name: 'Arsenal', rec: 'W7 of Last 10 · 2nd in PL', logo: '🔴' },
+    away: { name: 'Chelsea', rec: 'W5 of Last 10 · 6th in PL', logo: '💙' },
+    pick: 'Both Teams to Score',
+    pickType: 'BTTS', odds: -120, conf: 85,
+    analysis: 'BTTS has landed in 8 of Arsenal\'s last 10 home fixtures. Chelsea have scored in 14 consecutive away games. xG model projects 3.1 combined goals. Both clubs rank top-8 in PL attacking output.',
+    stats: [
+      { lbl: 'Arsenal BTTS (H)', val: '8/10' },
+      { lbl: 'Chelsea Away Goals', val: '14 Consec.' },
+      { lbl: 'Combined xG', val: '3.1' }
+    ]
+  },
+
+  {
+    id: 'soc-barca-atl',
+    sport: 'SOCCER', league: 'La Liga · Matchday 36',
+    time: '10:15 AM ET', cat: 'sure',
+    home: { name: 'FC Barcelona', rec: 'W8 of Last 10 · 1st in LaLiga', logo: '🔵' },
+    away: { name: 'Atletico Madrid', rec: 'W6 of Last 10 · 3rd', logo: '🔴' },
+    pick: 'Barcelona −0.5 (Asian HDP)',
+    pickType: 'Asian Handicap', odds: -130, conf: 82,
+    analysis: 'Barca on a 12-game home unbeaten run. Lewandowski fully fit — 6 goals in his last 5 appearances. Atletico are defensively solid but struggle against high-press away. xG edge: Barcelona 2.8 vs ATM 0.9.',
+    stats: [
+      { lbl: 'Home Unbeaten', val: '12 Games' },
+      { lbl: 'Lewa Last 5', val: '6 Goals' },
+      { lbl: 'xG Advantage', val: '+1.9' }
+    ]
+  },
+
+  {
+    id: 'mlb-brv-phi',
+    sport: 'MLB', league: 'MLB Regular Season',
+    time: '7:10 PM ET', cat: 'sure',
+    home: { name: 'Atlanta Braves', rec: '27-14 · NL East', logo: '🪓' },
+    away: { name: 'Philadelphia Phillies', rec: '25-16 · NL East', logo: '🔔' },
+    pick: 'Under 8.5 Runs',
+    pickType: 'Total (Runs)', odds: -115, conf: 84,
+    analysis: 'Both starters rank top-5 in NL in K/9. Forecast: 15 mph headwind blowing in from centre — suppresses power. Under has hit in 7 of last 9 ATL home games with ace-vs-ace matchups. Low-scoring environment expected.',
+    stats: [
+      { lbl: 'ATL Starter K/9', val: '11.2' },
+      { lbl: 'PHI Starter K/9', val: '10.8' },
+      { lbl: 'Wind Factor', val: '15 mph IN' }
+    ]
+  },
+
+  {
+    id: 'mma-makh-oli',
+    sport: 'MMA', league: 'UFC 315 · Lightweight Main Event',
+    time: '10:00 PM ET', cat: 'sure',
+    home: { name: 'Islam Makhachev', rec: '27-1 · LW Champion', logo: '🥊' },
+    away: { name: 'Charles Oliveira', rec: '33-9 · #1 Contender', logo: '🥊' },
+    pick: 'Islam Makhachev to Win',
+    pickType: 'Moneyline', odds: -180, conf: 87,
+    analysis: 'Makhachev\'s wrestling is generational — 78% TD accuracy vs Oliveira\'s 41% TD defense. Elite grappling will neutralise Oliveira\'s dangerous submission game. Makhachev has defended his title 4 times with zero losses in that run.',
+    stats: [
+      { lbl: 'TD Accuracy', val: '78%' },
+      { lbl: 'Opp. TD Defense', val: '41%' },
+      { lbl: 'Title Defenses', val: '4-0' }
+    ]
+  },
+
+  {
+    id: 'nhl-fla-tbl',
+    sport: 'NHL', league: 'NHL Playoffs · Atlantic R2 Game 3',
+    time: '7:00 PM ET', cat: 'sure',
+    home: { name: 'Florida Panthers', rec: '52-22-8 · Series 2-0', logo: '🐆' },
+    away: { name: 'Tampa Bay Lightning', rec: '48-26-8 · Must Win', logo: '⚡' },
+    pick: 'Florida Panthers ML',
+    pickType: 'Moneyline', odds: -140, conf: 80,
+    analysis: 'Panthers have an incredible home playoff record — 15-4 over the past two postseasons. Sergei Bobrovsky\'s .934 save percentage dominates Tampa\'s .918. Panthers lead 2-0 in the series and are pure business at home.',
+    stats: [
+      { lbl: 'Playoff Home Rec.', val: '15-4' },
+      { lbl: 'Bob SV%', val: '.934' },
+      { lbl: 'Series Lead', val: 'FLA 2-0' }
+    ]
+  },
+
+  // ─── PLACE BETS ──────────────────────────────
+
+  {
+    id: 'nba-okc-den',
+    sport: 'NBA', league: 'NBA Playoffs · WCF R2 Game 3',
+    time: '10:00 PM ET', cat: 'place',
+    home: { name: 'OKC Thunder', rec: '68-14 · Series Lead 2-0', logo: '⚡' },
+    away: { name: 'Denver Nuggets', rec: '56-26 · Season Record', logo: '⛏️' },
+    pick: 'Over 221.5 Points',
+    pickType: 'Total', odds: -108, conf: 76,
+    analysis: 'Both teams averaging 118+ PPG in this playoff run. OKC plays the 2nd-fastest pace in the league. Five of the last six Nuggets playoff games went over the total. Expect an up-tempo shootout at Paycom Center.',
+    stats: [
+      { lbl: 'OKC PO PPG', val: '121.3' },
+      { lbl: 'DEN PO PPG', val: '119.8' },
+      { lbl: 'Over Trend', val: '5-1 Last 6' }
+    ]
+  },
+
+  {
+    id: 'mlb-lad-sfg',
+    sport: 'MLB', league: 'MLB Regular Season',
+    time: '4:05 PM ET', cat: 'place',
+    home: { name: 'Los Angeles Dodgers', rec: '30-11 · NL West', logo: '🌊' },
+    away: { name: 'San Francisco Giants', rec: '22-19 · NL West', logo: '🦁' },
+    pick: 'LA Dodgers −1.5 (Run Line)',
+    pickType: 'Run Line', odds: +130, conf: 72,
+    analysis: 'Dodgers ace posting a 2.74 ERA against the Giants this season. SF bullpen ranks 28th in ERA across MLB. Dodgers win by 2+ in 68% of home matchups vs sub-.500 opponents. Excellent run-line value at +130.',
+    stats: [
+      { lbl: 'Starter ERA vs SF', val: '2.74' },
+      { lbl: 'SF Bullpen ERA', val: '4.82' },
+      { lbl: 'LAD RL at Home', val: '18-9' }
+    ]
+  },
+
+  {
+    id: 'ten-alc-djok',
+    sport: 'TENNIS', league: 'Italian Open (Rome) · Men\'s QF',
+    time: '11:00 AM ET', cat: 'place',
+    home: { name: 'Carlos Alcaraz', rec: 'Clay 2026: 18-2', logo: '🎾' },
+    away: { name: 'Novak Djokovic', rec: 'Clay 2026: 15-4', logo: '🎾' },
+    pick: 'Alcaraz to Win Match',
+    pickType: 'Match Winner', odds: -145, conf: 77,
+    analysis: 'Alcaraz is the dominant force on clay right now — 18-2 this season on the surface. Djokovic is competitive but played a 3-set grind yesterday. Alcaraz had a bye. H2H on clay: Alcaraz 3-1. Stamina edge matters here.',
+    stats: [
+      { lbl: 'Clay Record \'26', val: '18-2' },
+      { lbl: 'H2H on Clay', val: 'ALC 3-1' },
+      { lbl: 'Fatigue Flag', val: 'DJO 3-set Yest.' }
+    ]
+  },
+
+  {
+    id: 'nhl-edm-col',
+    sport: 'NHL', league: 'NHL Playoffs · Pacific R2 Game 3',
+    time: '9:30 PM ET', cat: 'place',
+    home: { name: 'Edmonton Oilers', rec: '51-24-7 · Series 2-0', logo: '🛢️' },
+    away: { name: 'Colorado Avalanche', rec: '50-25-7 · Must Win', logo: '❄️' },
+    pick: 'Oilers −1.5 (Puck Line)',
+    pickType: 'Puck Line', odds: +125, conf: 69,
+    analysis: 'McDavid is on a tear — 12 points in 7 playoff games. Oilers have scored 4+ goals in 5 of 7 playoff games. Colorado\'s defensive system is vulnerable to rush offence, ranking 28th in the NHL in that category.',
+    stats: [
+      { lbl: 'McDavid PO Pts', val: '12 in 7 GP' },
+      { lbl: '4+ Goal Games', val: '5/7 PO' },
+      { lbl: 'COL Rush Defense', val: '28th NHL' }
+    ]
+  },
+
+  {
+    id: 'mlb-nyy-bos',
+    sport: 'MLB', league: 'MLB Regular Season · AL East Rivalry',
+    time: '7:05 PM ET', cat: 'place',
+    home: { name: 'New York Yankees', rec: '28-13 · AL East', logo: '🎩' },
+    away: { name: 'Boston Red Sox', rec: '20-22 · AL East', logo: '🧦' },
+    pick: 'Yankees −1.5 (Run Line)',
+    pickType: 'Run Line', odds: +115, conf: 73,
+    analysis: 'Yankees ace on the mound — 1.89 ERA in May. Red Sox batting only .236 vs left-handed pitching this season. Yankees are 22-8 at home. Excellent value on the run line at +115 against a struggling Red Sox offence.',
+    stats: [
+      { lbl: 'Starter ERA (May)', val: '1.89' },
+      { lbl: 'NYY Home Record', val: '22-8' },
+      { lbl: 'BOS vs LHP AVG', val: '.236' }
+    ]
+  },
+
+  {
+    id: 'golf-sch-pga',
+    sport: 'GOLF', league: 'PGA Championship 2026 · Quail Hollow',
+    time: '8:00 AM ET (R1)', cat: 'place',
+    home: { name: 'Scottie Scheffler', rec: 'World No. 1', logo: '⛳' },
+    away: { name: 'Field (155 players)', rec: 'Major Field', logo: '🏌️' },
+    pick: 'Scheffler Top-5 Finish',
+    pickType: 'Tournament Prop', odds: +220, conf: 68,
+    analysis: 'Scheffler is in the form of his life — 4 wins in his last 6 starts. The PGA Championship course setup rewards elite ball-strikers, Scheffler\'s greatest strength. He was runner-up here last year and knows every hole.',
+    stats: [
+      { lbl: 'Wins Last 6 Starts', val: '4/6' },
+      { lbl: 'SG: Total (YTD)', val: '+4.2' },
+      { lbl: 'PGA Best Result', val: 'R/Up \'25' }
+    ]
+  }
+];
+
+// ══════════════════════════════════════════
+//  LOTTO / PARLAY PICKS
+// ══════════════════════════════════════════
+
+const LOTTO_PICKS = [
+  {
+    id: 'lot-power5',
+    icon: '💎',
+    title: '5-Leg Power Parlay',
+    odds: +2850,
+    estReturn: '$295 on $10',
+    prob: '~34%',
+    legs: [
+      { sport: 'NBA',    pick: 'Celtics −6.5',           odds: -110, conf: 88 },
+      { sport: 'SOCCER', pick: 'Real Madrid or Draw',     odds: -155, conf: 91 },
+      { sport: 'MLB',    pick: 'Braves Under 8.5',        odds: -115, conf: 84 },
+      { sport: 'NHL',    pick: 'Panthers ML',             odds: -140, conf: 80 },
+      { sport: 'MMA',    pick: 'Makhachev Win',           odds: -180, conf: 87 }
+    ],
+    analysis: 'Five best sure-bet picks combined into a single power parlay. Each leg is statistically backed at 80%+ confidence. Combined probability ~34%. Recommended stake: 1-2% of bankroll for maximum entertainment value.'
+  },
+  {
+    id: 'lot-soccer3',
+    icon: '⚽',
+    title: 'Soccer Treble Accumulator',
+    odds: +680,
+    estReturn: '$78 on $10',
+    prob: '~41%',
+    legs: [
+      { sport: 'SOCCER', pick: 'Arsenal BTTS',            odds: -120, conf: 85 },
+      { sport: 'SOCCER', pick: 'Barcelona −0.5 AH',       odds: -130, conf: 82 },
+      { sport: 'SOCCER', pick: 'Real Madrid Win or Draw', odds: -155, conf: 91 }
+    ],
+    analysis: 'Soccer specialist treble covering Premier League, La Liga and Champions League. All three picks backed by strong statistical models and recent form. BTTS and Double Chance markets offer consistent weekly value.'
+  },
+  {
+    id: 'lot-props-bomb',
+    icon: '💥',
+    title: 'Player Props Mega Bomb',
+    odds: +3200,
+    estReturn: '$330 on $10',
+    prob: '~24%',
+    legs: [
+      { sport: 'NBA',  pick: 'Tatum 35+ Points',          odds: +180, conf: 52 },
+      { sport: 'NBA',  pick: 'Jokic Triple-Double',        odds: +140, conf: 58 },
+      { sport: 'MLB',  pick: 'Judge 2+ RBI',               odds: +150, conf: 56 },
+      { sport: 'NHL',  pick: 'McDavid 2+ Points',          odds: +140, conf: 61 },
+      { sport: 'MMA',  pick: 'Makhachev by Submission',    odds: +175, conf: 48 }
+    ],
+    analysis: 'High-risk entertainment parlay combining star player props. Each player has shown form to hit, but combined probability is ~24%. This is a pure lottery-ticket — keep stakes very small ($5-10 max).'
+  },
+  {
+    id: 'lot-evening6',
+    icon: '🌙',
+    title: 'Evening Slate 6-Leg Bomb',
+    odds: +4800,
+    estReturn: '$490 on $10',
+    prob: '~18%',
+    legs: [
+      { sport: 'NHL',  pick: 'Panthers ML',               odds: -140, conf: 80 },
+      { sport: 'NHL',  pick: 'Oilers −1.5 Puck Line',     odds: +125, conf: 69 },
+      { sport: 'MLB',  pick: 'Under 8.5 ATL/PHI',         odds: -115, conf: 84 },
+      { sport: 'MLB',  pick: 'Dodgers RL −1.5',           odds: +130, conf: 72 },
+      { sport: 'MLB',  pick: 'Yankees RL −1.5',           odds: +115, conf: 73 },
+      { sport: 'NBA',  pick: 'Over 221.5 OKC/DEN',        odds: -108, conf: 76 }
+    ],
+    analysis: 'Six-leg bomb combining the best NHL puck lines, MLB run lines and an NBA total for tonight\'s full evening slate. Maximum reward potential. Stake $5-10 only — this is the "lotto ticket" of the night.'
+  }
+];
+
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+
+let currentSport = 'ALL';
+let parlayLegs   = [];
+let savedPicks   = new Set(JSON.parse(localStorage.getItem('q_saved') || '[]'));
+let activePick   = null; // for Pikkit sheet
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+
+const fmt = o => o > 0 ? '+' + o : '' + o;
+const odsCls = o => o < 0 ? 'fav' : 'dog';
+const impliedProb = o => o < 0
+  ? ((-o) / (-o + 100) * 100).toFixed(0) + '%'
+  : (100 / (o + 100) * 100).toFixed(0) + '%';
+
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════
+//  RENDER SINGLE PICK CARD
+// ══════════════════════════════════════════
+
+function renderPickCard(p) {
+  const saved    = savedPicks.has(p.id);
+  const inParlay = parlayLegs.some(l => l.id === p.id);
+
+  return `
+<div class="pick-card ${p.cat}-card" id="card-${p.id}">
+  <div class="c-hdr">
+    <span class="sport-badge ${p.sport}">${p.sport}</span>
+    <span class="league-lbl">${p.league}</span>
+    <span class="c-time">${p.time}</span>
+    <span class="c-cat-badge ${p.cat}">${p.cat === 'sure' ? '🛡 SURE BET' : '🎯 PLACE BET'}</span>
+  </div>
+  <div class="c-matchup">
+    <div class="teams-row">
+      <div class="team-blk">
+        <div class="team-logo">${p.home.logo}</div>
+        <div class="team-name">${p.home.name}</div>
+        <div class="team-rec">${p.home.rec}</div>
+      </div>
+      <div class="vs-blk">VS</div>
+      <div class="team-blk">
+        <div class="team-logo">${p.away.logo}</div>
+        <div class="team-name">${p.away.name}</div>
+        <div class="team-rec">${p.away.rec}</div>
+      </div>
+    </div>
+    <div class="pick-box">
+      <div class="pick-box-lbl">TODAY'S PICK</div>
+      <div class="pick-line">${p.pick}</div>
+      <div class="pick-meta">
+        <span class="pick-type-badge">${p.pickType}</span>
+        <div class="odds-col">
+          <div class="odds-val ${odsCls(p.odds)}">${fmt(p.odds)}</div>
+          <div class="odds-implied">Implied: ${impliedProb(p.odds)}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="conf-row">
+    <span class="conf-lbl">CONFIDENCE</span>
+    <div class="conf-track"><div class="conf-fill ${p.cat}" style="width:${p.conf}%"></div></div>
+    <span class="conf-pct ${p.cat}">${p.conf}%</span>
+  </div>
+  <div class="c-analysis">${p.analysis}</div>
+  <div class="pick-stats">
+    ${p.stats.map(s => `<div class="pstat"><div class="pstat-val">${s.val}</div><div class="pstat-lbl">${s.lbl}</div></div>`).join('')}
+  </div>
+  <div class="c-actions">
+    <button class="c-btn ${saved ? 'saved' : ''}" id="save-btn-${p.id}" onclick="toggleSave('${p.id}',this)">
+      ${saved ? '★ SAVED' : '☆ SAVE'}
+    </button>
+    <button class="c-btn" onclick="copyPick('${p.id}')">📋 COPY</button>
+    <button class="c-btn ${inParlay ? 'in-parlay' : ''}" id="parlay-btn-${p.id}" onclick="toggleParlay('${p.id}')">
+      ${inParlay ? '✓ PARLAY' : '+ PARLAY'}
+    </button>
+    <button class="c-btn pikkit" onclick="openPikkitSheet('${p.id}')">🎯 PIKKIT</button>
+  </div>
+</div>`;
+}
+
+// ══════════════════════════════════════════
+//  RENDER LOTTO CARD
+// ══════════════════════════════════════════
+
+function renderLottoCard(l) {
+  return `
+<div class="lotto-card" id="lotto-${l.id}">
+  <div class="lotto-top">
+    <div class="lotto-head-row">
+      <div>
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:4px">
+          <span class="lotto-icon-big">${l.icon}</span>
+          <div class="lotto-title">${l.title}</div>
+        </div>
+        <div class="lotto-return-tag">Est. Payout: ${l.estReturn}</div>
+        <div class="lotto-leg-count">${l.legs.length} LEGS · HIT RATE ${l.prob}</div>
+      </div>
+      <div class="lotto-odds-col">
+        <div class="lotto-odds-sub">COMBINED ODDS</div>
+        <div class="lotto-odds-big">${fmt(l.odds)}</div>
+        <div class="lotto-prob">${l.prob} probability</div>
+      </div>
+    </div>
+  </div>
+  <div class="legs-list">
+    ${l.legs.map((leg, i) => `
+    <div class="leg-row">
+      <div class="leg-num">${i + 1}</div>
+      <div class="leg-sport-badge">${leg.sport}</div>
+      <div class="leg-pick-txt">${leg.pick}</div>
+      <span class="leg-odds-txt ${odsCls(leg.odds)}">${fmt(leg.odds)}</span>
+      <span class="leg-conf-dot">${leg.conf}%</span>
+    </div>`).join('')}
+  </div>
+  <div class="lotto-analysis">${l.analysis}</div>
+  <div class="lotto-actions">
+    <button class="c-btn" onclick="copyLotto('${l.id}')" style="flex:1">📋 COPY</button>
+    <button class="c-btn pikkit" onclick="openLottoPikkitSheet('${l.id}')" style="flex:2">🎯 BET WITH PIKKIT</button>
+  </div>
+</div>`;
+}
+
+// ══════════════════════════════════════════
+//  FILTER & RENDER ALL
+// ══════════════════════════════════════════
+
+function filteredPicks(cat) {
+  return SINGLE_PICKS.filter(p =>
+    p.cat === cat && (currentSport === 'ALL' || p.sport === currentSport)
+  );
+}
+
+function renderAll() {
+  const sures  = filteredPicks('sure');
+  const places = filteredPicks('place');
+  const lottos = currentSport === 'ALL'
+    ? LOTTO_PICKS
+    : LOTTO_PICKS.filter(l => l.legs.some(leg => leg.sport === currentSport));
+
+  document.getElementById('sure-picks').innerHTML  = sures.length  ? sures.map(renderPickCard).join('') : emptyState('🛡', 'No Sure Bets for this sport');
+  document.getElementById('place-picks').innerHTML = places.length ? places.map(renderPickCard).join('') : emptyState('🎯', 'No Place Bets for this sport');
+  document.getElementById('lotto-picks').innerHTML = lottos.length ? lottos.map(renderLottoCard).join('') : emptyState('🎰', 'No Lotto picks for this sport');
+
+  document.getElementById('cnt-sure').textContent  = SINGLE_PICKS.filter(p => p.cat === 'sure').length;
+  document.getElementById('cnt-place').textContent = SINGLE_PICKS.filter(p => p.cat === 'place').length;
+  document.getElementById('cnt-lotto').textContent = LOTTO_PICKS.length;
+  document.getElementById('totalPicksCount').textContent = SINGLE_PICKS.length + LOTTO_PICKS.length;
+  document.getElementById('nb-sure').textContent = SINGLE_PICKS.filter(p => p.cat === 'sure').length;
+}
+
+function emptyState(icon, msg) {
+  return `<div class="empty-state"><div class="empty-icon">${icon}</div><div class="empty-msg">${msg}</div><div class="empty-sub">Try switching to <strong>ALL SPORTS</strong> above</div></div>`;
+}
+
+// ══════════════════════════════════════════
+//  TAB SWITCHING
+// ══════════════════════════════════════════
+
+function switchTab(tab, btn) {
+  document.querySelectorAll('.pg').forEach(p => p.classList.remove('on'));
+  document.getElementById('pg-' + tab).classList.add('on');
+  document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('on'));
+  document.querySelector(`.cat-tab[data-tab="${tab}"]`).classList.add('on');
+  document.querySelectorAll('.bnav-btn').forEach(b => b.classList.remove('on'));
+  if (btn) btn.classList.add('on');
+}
+
+// Cat tab click
+document.querySelectorAll('.cat-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const t = tab.dataset.tab;
+    const navBtn = document.querySelector(`.bnav-btn[data-tab="${t}"]`);
+    switchTab(t, navBtn);
+  });
+});
+
+// ══════════════════════════════════════════
+//  SPORT FILTER
+// ══════════════════════════════════════════
+
+document.getElementById('sportFilter').addEventListener('click', e => {
+  const chip = e.target.closest('.sp-chip');
+  if (!chip) return;
+  document.querySelectorAll('.sp-chip').forEach(c => c.classList.remove('on'));
+  chip.classList.add('on');
+  currentSport = chip.dataset.sport;
+  renderAll();
+});
+
+// ══════════════════════════════════════════
+//  SAVE
+// ══════════════════════════════════════════
+
+function toggleSave(id, btn) {
+  if (savedPicks.has(id)) {
+    savedPicks.delete(id);
+    btn.classList.remove('saved');
+    btn.textContent = '☆ SAVE';
+    toast('Removed from saved');
+  } else {
+    savedPicks.add(id);
+    btn.classList.add('saved');
+    btn.textContent = '★ SAVED';
+    toast('Pick saved! ★', 'ok');
+  }
+  localStorage.setItem('q_saved', JSON.stringify([...savedPicks]));
+}
+
+// ══════════════════════════════════════════
+//  COPY
+// ══════════════════════════════════════════
+
+function copyPick(id) {
+  const p = SINGLE_PICKS.find(x => x.id === id);
+  if (!p) return;
+  const txt = `🏆 QUATTRO SPORTS PICK\n${p.sport} | ${p.league}\n${p.home.name} vs ${p.away.name}\nTime: ${p.time}\n\n✅ PICK: ${p.pick}\nType: ${p.pickType} | Odds: ${fmt(p.odds)}\nConfidence: ${p.conf}% | Implied: ${impliedProb(p.odds)}\n\n📊 ${p.analysis}\n\n#QSports #SportsBetting`;
+  navigator.clipboard.writeText(txt)
+    .then(() => toast('Copied to clipboard!', 'ok'))
+    .catch(() => toast('Tap again to copy'));
+}
+
+function copyLotto(id) {
+  const l = LOTTO_PICKS.find(x => x.id === id);
+  if (!l) return;
+  const legs = l.legs.map((lg, i) => `  Leg ${i+1}: ${lg.sport} — ${lg.pick} (${fmt(lg.odds)})`).join('\n');
+  const txt = `🎰 QUATTRO PARLAY: ${l.title}\nCombined Odds: ${fmt(l.odds)}\nEst. Return on $10: ${l.estReturn}\nHit Rate: ${l.prob}\n\nLEGS:\n${legs}\n\n📊 ${l.analysis}\n\n#QSports #Parlay`;
+  navigator.clipboard.writeText(txt)
+    .then(() => toast('Parlay copied!', 'ok'))
+    .catch(() => toast('Tap again to copy'));
+}
+
+// ══════════════════════════════════════════
+//  PARLAY BUILDER
+// ══════════════════════════════════════════
+
+function toggleParlay(id) {
+  const p   = SINGLE_PICKS.find(x => x.id === id);
+  const btn = document.getElementById('parlay-btn-' + id);
+  const idx = parlayLegs.findIndex(l => l.id === id);
+
+  if (idx >= 0) {
+    parlayLegs.splice(idx, 1);
+    if (btn) { btn.classList.remove('in-parlay'); btn.textContent = '+ PARLAY'; }
+    toast('Removed from parlay');
+  } else {
+    if (parlayLegs.length >= 12) { toast('Max 12 legs reached', 'warn'); return; }
+    parlayLegs.push({ id: p.id, sport: p.sport, pick: p.pick, odds: p.odds, conf: p.conf });
+    if (btn) { btn.classList.add('in-parlay'); btn.textContent = '✓ PARLAY'; }
+    toast(`Added! Parlay now has ${parlayLegs.length} leg${parlayLegs.length > 1 ? 's' : ''}`, 'ok');
+  }
+
+  updateNavBadge();
+  updateParlay();
+}
+
+function removeFromParlay(id) {
+  parlayLegs = parlayLegs.filter(l => l.id !== id);
+  const btn = document.getElementById('parlay-btn-' + id);
+  if (btn) { btn.classList.remove('in-parlay'); btn.textContent = '+ PARLAY'; }
+  updateNavBadge();
+  updateParlay();
+  toast('Leg removed');
+}
+
+function updateNavBadge() {
+  const badge = document.getElementById('nb-build');
+  if (parlayLegs.length > 0) {
+    badge.textContent = parlayLegs.length;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function calcCombinedOdds(legs) {
+  if (!legs.length) return 100;
+  let mult = 1;
+  legs.forEach(l => {
+    mult *= l.odds < 0 ? (1 + 100 / -l.odds) : (1 + l.odds / 100);
+  });
+  return mult >= 2 ? Math.round((mult - 1) * 100) : Math.round(-100 / (mult - 1));
+}
+
+function calcPayout(odds, stake) {
+  const win = odds > 0 ? stake * odds / 100 : stake * 100 / -odds;
+  return '$' + (stake + win).toFixed(2);
+}
+
+function calcCombinedProb(legs) {
+  let p = 1;
+  legs.forEach(l => { p *= l.conf / 100; });
+  return (p * 100).toFixed(1) + '%';
+}
+
+function updateParlay() {
+  const empty    = document.getElementById('pb-empty');
+  const totals   = document.getElementById('pb-totals');
+  const placeBtn = document.getElementById('pb-place-btn');
+  const legsWrap = document.getElementById('pb-legs-container');
+
+  if (!parlayLegs.length) {
+    legsWrap.innerHTML = `
+      <div class="pb-empty" id="pb-empty">
+        <div class="pb-empty-icon">🎰</div>
+        <div class="pb-empty-msg">Your parlay is empty</div>
+        <div class="pb-empty-sub">Go to Sure Bets or Place Bets and tap<br><strong style="color:#b985ff">+ PARLAY</strong> on any pick to add it here</div>
+      </div>`;
+    totals.style.display   = 'none';
+    placeBtn.style.display = 'none';
+    return;
+  }
+
+  const legCards = parlayLegs.map(l => `
+    <div class="pb-leg-card">
+      <span class="pb-leg-sport">${l.sport}</span>
+      <span class="pb-leg-pick">${l.pick}</span>
+      <span class="pb-leg-odds">${fmt(l.odds)}</span>
+      <button class="pb-leg-rm" onclick="removeFromParlay('${l.id}')">✕</button>
+    </div>`).join('');
+
+  legsWrap.innerHTML = legCards;
+  totals.style.display   = 'block';
+  placeBtn.style.display = 'block';
+
+  const stake   = parseFloat(document.getElementById('pb-stake').value) || 10;
+  const odds    = calcCombinedOdds(parlayLegs);
+  const payout  = calcPayout(odds, stake);
+  const prob    = calcCombinedProb(parlayLegs);
+
+  document.getElementById('pb-legs-count').textContent = parlayLegs.length;
+  document.getElementById('pb-prob').textContent       = prob;
+  document.getElementById('pb-odds').textContent       = fmt(odds);
+  document.getElementById('pb-payout').textContent     = payout;
+}
+
+function placeParlayWithPikkit() {
+  const stake = document.getElementById('pb-stake').value || 10;
+  const odds  = calcCombinedOdds(parlayLegs);
+  const txt   = `CUSTOM PARLAY (${parlayLegs.length} legs)\nOdds: ${fmt(odds)}\nStake: $${stake}\nEst. Payout: ${calcPayout(odds, parseFloat(stake))}\n\nLEGS:\n${parlayLegs.map((l, i) => `${i+1}. ${l.sport}: ${l.pick} (${fmt(l.odds)})`).join('\n')}`;
+
+  document.getElementById('sheetPickContent').innerHTML =
+    `<strong>Custom ${parlayLegs.length}-Leg Parlay</strong><br>` +
+    `Odds: <strong>${fmt(odds)}</strong> | Stake: <strong>$${stake}</strong><br>` +
+    `Est. Payout: <strong>${calcPayout(odds, parseFloat(stake))}</strong><br><br>` +
+    parlayLegs.map((l, i) => `${i+1}. ${l.sport}: ${l.pick} <span style="color:#f5b93a">(${fmt(l.odds)})</span>`).join('<br>');
+
+  activePick = { type: 'parlay', text: txt };
+  document.getElementById('pikkitOverlay').classList.add('show');
+}
+
+// ══════════════════════════════════════════
+//  PIKKIT SHEET
+// ══════════════════════════════════════════
+
+function openPikkitSheet(id) {
+  const p = SINGLE_PICKS.find(x => x.id === id);
+  if (!p) return;
+  const txt = `${p.sport} | ${p.home.name} vs ${p.away.name}\nPICK: ${p.pick}\nOdds: ${fmt(p.odds)} | Confidence: ${p.conf}%\nType: ${p.pickType}\n${p.time}`;
+  activePick = { type: 'single', text: txt };
+  document.getElementById('sheetPickContent').innerHTML =
+    `<strong>${p.sport}</strong> · ${p.league}<br>` +
+    `<strong>${p.home.name}</strong> vs <strong>${p.away.name}</strong><br>` +
+    `📅 ${p.time}<br><br>` +
+    `✅ PICK: <strong style="color:#00ff9d">${p.pick}</strong><br>` +
+    `Type: ${p.pickType} | Odds: <strong>${fmt(p.odds)}</strong><br>` +
+    `Confidence: ${p.conf}% | Implied: ${impliedProb(p.odds)}`;
+  document.getElementById('pikkitOverlay').classList.add('show');
+}
+
+function openLottoPikkitSheet(id) {
+  const l = LOTTO_PICKS.find(x => x.id === id);
+  if (!l) return;
+  const txt = `PARLAY: ${l.title}\nOdds: ${fmt(l.odds)}\nEst. Return on $10: ${l.estReturn}\n\n${l.legs.map((lg, i) => `${i+1}. ${lg.sport}: ${lg.pick} (${fmt(lg.odds)})`).join('\n')}`;
+  activePick = { type: 'parlay', text: txt };
+  document.getElementById('sheetPickContent').innerHTML =
+    `<strong>${l.title}</strong><br>` +
+    `Combined Odds: <strong style="color:#f5b93a">${fmt(l.odds)}</strong><br>` +
+    `Est. Return on $10: <strong>${l.estReturn}</strong><br>` +
+    `Hit Rate: ${l.prob}<br><br>` +
+    l.legs.map((lg, i) => `${i+1}. <strong>${lg.sport}</strong>: ${lg.pick} <span style="color:#f5b93a">(${fmt(lg.odds)})</span>`).join('<br>');
+  document.getElementById('pikkitOverlay').classList.add('show');
+}
+
+function closeSheet(e) {
+  if (e && e.target !== document.getElementById('pikkitOverlay')) return;
+  document.getElementById('pikkitOverlay').classList.remove('show');
+  activePick = null;
+}
+
+function copyAndOpenPikkit() {
+  if (!activePick) return;
+  navigator.clipboard.writeText(activePick.text)
+    .then(() => {
+      toast('Copied! Opening Pikkit...', 'ok');
+      setTimeout(() => window.open('https://pikkit.com', '_blank'), 600);
+    })
+    .catch(() => {
+      window.open('https://pikkit.com', '_blank');
+      toast('Opening Pikkit...');
+    });
+  document.getElementById('pikkitOverlay').classList.remove('show');
+}
+
+// ══════════════════════════════════════════
+//  LOADING SCREEN
+// ══════════════════════════════════════════
+
+const loadMsgs = [
+  'SCANNING TODAY\'S MATCHUPS...',
+  'LOADING PLAYER STATS...',
+  'ANALYSING HISTORICAL DATA...',
+  'COMPUTING CONFIDENCE SCORES...',
+  'GENERATING LOTTO PARLAYS...',
+  'PICKS READY!'
+];
+
+function runLoader() {
+  const pctEl  = document.getElementById('loadPct');
+  const msgEl  = document.getElementById('loadMsg');
+  let pct = 0;
+  const iv = setInterval(() => {
+    pct += Math.floor(Math.random() * 18) + 8;
+    if (pct > 100) pct = 100;
+    pctEl.textContent = pct + '%';
+    const stage = Math.floor(pct / 17);
+    msgEl.textContent = loadMsgs[Math.min(stage, loadMsgs.length - 1)];
+    if (pct === 100) {
+      clearInterval(iv);
+      setTimeout(() => {
+        document.getElementById('loadScreen').classList.add('off');
+        setTimeout(() => document.getElementById('loadScreen').remove(), 600);
+      }, 400);
+    }
+  }, 120);
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Date header
+  const d = new Date();
+  document.getElementById('hdrDate').textContent = d.toLocaleDateString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+  });
+
+  renderAll();
+  runLoader();
+});
+</script>
+</body>
+</html>
